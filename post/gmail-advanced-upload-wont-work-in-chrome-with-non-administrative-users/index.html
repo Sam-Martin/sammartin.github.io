@@ -1,0 +1,115 @@
+<!doctype html>
+<html lang="en-gb">
+  <head>
+    <title>Gmail advanced upload won&#39;t work in Chrome with non administrative users. // Sam Martin</title>
+    <meta charset="utf-8" />
+    <meta name="generator" content="Hugo 0.64.0" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="author" content="Sam Martin" />
+    <meta name="description" content="" />
+    <link rel="stylesheet" href="https://sammart.in/css/main.min.a998572a1815565bbca4f2ca9babb1ae248504a1710ee90b7e336857f14fba27.css" />
+
+    
+<script type="application/javascript">
+var doNotTrack = false;
+if (!doNotTrack) {
+	(function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+	(i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+	m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+	})(window,document,'script','https://www.google-analytics.com/analytics.js','ga');
+	ga('create', 'UA-66377745-1', 'auto');
+	
+	ga('send', 'pageview');
+}
+</script>
+
+    <meta name="twitter:card" content="summary"/>
+<meta name="twitter:title" content="Gmail advanced upload won&#39;t work in Chrome with non administrative users."/>
+<meta name="twitter:description" content="The other day some of my users complained of a very strange issue when using Gmail at work. When composing a new email, they could not upload attachments using the “Advanced Upload” function. When they clicked “Add File” to upload a new document, nothing happened, no error, nothing, it just sat there and refused to work.
+Naturally it worked fine when I tried it. It seemed to happen only when the user did not have administrative access on their computer."/>
+
+    <meta property="og:title" content="Gmail advanced upload won&#39;t work in Chrome with non administrative users." />
+<meta property="og:description" content="The other day some of my users complained of a very strange issue when using Gmail at work. When composing a new email, they could not upload attachments using the “Advanced Upload” function. When they clicked “Add File” to upload a new document, nothing happened, no error, nothing, it just sat there and refused to work.
+Naturally it worked fine when I tried it. It seemed to happen only when the user did not have administrative access on their computer." />
+<meta property="og:type" content="article" />
+<meta property="og:url" content="https://sammart.in/post/gmail-advanced-upload-wont-work-in-chrome-with-non-administrative-users/" />
+<meta property="article:published_time" content="2011-08-29T00:00:00+00:00" />
+<meta property="article:modified_time" content="2011-08-29T00:00:00+00:00" />
+
+
+  </head>
+  <body>
+    <header class="app-header">
+      <a href="https://sammart.in/"><img class="app-header-avatar" src="/avatar.jpg" alt="Sam Martin" /></a>
+      <h1>Sam Martin</h1>
+      <p>Adventures in IT</p>
+      <div class="app-header-social">
+        
+      </div>
+    </header>
+    <main class="app-container">
+      
+  <article class="post">
+    <header class="post-header">
+      <h1 class ="post-title">Gmail advanced upload won&#39;t work in Chrome with non administrative users.</h1>
+      <div class="post-meta">
+        <div>
+          <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-calendar">
+  <title>calendar</title>
+  <rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line>
+</svg>
+          Aug 29, 2011
+        </div>
+        <div>
+          <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-clock">
+  <title>clock</title>
+  <circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline>
+</svg>
+          2 min read
+        </div></div>
+    </header>
+    <div class="post-content">
+      <p>The other day some of my users complained of a very strange issue when using Gmail at work. When composing a new email, they could not upload attachments using the “Advanced Upload” function. When they clicked “Add File” to upload a new document, nothing happened, no error, nothing, it just sat there and refused to work.</p>
+<p>Naturally it worked <em>fine</em> when I tried it. It seemed to happen only when the user did not have administrative access on their computer. Odd, I thought.<br>
+A quick search of the web <a href="http://www.google.com/support/forum/p/gmail/thread?tid=3396cd44832f693d&amp;hl=en">revealed</a> <a href="http://www.google.com/support/forum/p/gmail/thread?tid=7f77c144096a5903&amp;hl=en">quite </a>a <a href="http://www.google.com/support/forum/p/gmail/thread?tid=00e43f845b2045d6&amp;hl=en">few</a> <a href="http://www.google.com/support/forum/p/Chrome/thread?tid=579d5b2939912968&amp;hl=en">people</a> <a href="http://www.google.com/support/forum/p/Chrome/thread?tid=7edb1b3753e0be40&amp;hl=en">with</a> <a href="http://www.google.com/support/forum/p/gmail/thread?tid=55345133bb303388&amp;hl=en">the</a> <a href="http://www.google.com/support/forum/p/Chrome/thread?tid=46ebd2f718483530&amp;hl=en">same</a> <a href="http://www.google.com/support/forum/p/gmail/thread?tid=21f7c5a346d7c348&amp;hl=en">problem</a>. But no real solutions other than “Switch to basic upload”, which is hardly a solution. A bit disappointing when a major feature of a Google product doesn’t work with Google’s flagship product!</p>
+<p>I did however happen upon a solution myself. It turns out that it’s <em>somehow</em> related to the inbuilt flash plugin that comes with Chrome.<br>
+If you disable that, then install Flash, presto changeo, it works!</p>
+<p>You can disable the plugin by typing</p>
+<blockquote>
+<p>chrome://plugins</p>
+</blockquote>
+<p>into the address bar and disabling it from there, but for administrators it’s probably easiest to use the following command line switch:</p>
+<blockquote>
+<p>-disable-internal-flash</p>
+</blockquote>
+<p><a href="/images/2011/10/chrome-shortcut-properties.png"><img src="/images/2011/10/chrome-shortcut-properties.png" alt="" title="chrome shortcut properties"></a></p>
+<p>There’s probably a better solution, something that allows the inbuilt Flash plugin to work, but this was an improvement over the solutions posted on Google’s user-based tech support board!</p>
+
+    </div>
+    <div class="post-footer">
+      <div id="disqus_thread"></div>
+<script type="application/javascript">
+    var disqus_config = function () {
+    
+    
+    
+    };
+    (function() {
+        if (["localhost", "127.0.0.1"].indexOf(window.location.hostname) != -1) {
+            document.getElementById('disqus_thread').innerHTML = 'Disqus comments not available by default when the website is previewed locally.';
+            return;
+        }
+        var d = document, s = d.createElement('script'); s.async = true;
+        s.src = '//' + "sammartin" + '.disqus.com/embed.js';
+        s.setAttribute('data-timestamp', +new Date());
+        (d.head || d.body).appendChild(s);
+    })();
+</script>
+<noscript>Please enable JavaScript to view the <a href="https://disqus.com/?ref_noscript">comments powered by Disqus.</a></noscript>
+<a href="https://disqus.com" class="dsq-brlink">comments powered by <span class="logo-disqus">Disqus</span></a>
+    </div>
+  </article>
+
+    </main>
+  </body>
+</html>

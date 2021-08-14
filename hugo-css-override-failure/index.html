@@ -1,0 +1,170 @@
+<!doctype html>
+<html lang="en-gb">
+  <head>
+    <title>Hugo CSS Override Failure: Why is everything the same but also different // Sam Martin</title>
+    <meta charset="utf-8" />
+    <meta name="generator" content="Hugo 0.64.0" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="author" content="Sam Martin" />
+    <meta name="description" content="" />
+    <link rel="stylesheet" href="https://sammart.in/css/main.min.a998572a1815565bbca4f2ca9babb1ae248504a1710ee90b7e336857f14fba27.css" />
+
+    
+<script type="application/javascript">
+var doNotTrack = false;
+if (!doNotTrack) {
+	(function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+	(i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+	m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+	})(window,document,'script','https://www.google-analytics.com/analytics.js','ga');
+	ga('create', 'UA-66377745-1', 'auto');
+	
+	ga('send', 'pageview');
+}
+</script>
+
+    <meta name="twitter:card" content="summary"/>
+<meta name="twitter:title" content="Hugo CSS Override Failure: Why is everything the same but also different"/>
+<meta name="twitter:description" content="I recently swapped my blog from Ghost to Hugo.
+While I liked the former (being MarkDown based, lightweight and easy to use), I adore Hugo as you can host it for free with GitHub Pages.
+Automation Whenever I setup a Hugo site I automate the deployment of it with Travis CI. This means that I can deploy updates to my blog just by editing and creating MarkDown files in GitHub, and as soon as they&rsquo;re committed to master the updated, rendered, website will be available in a matter of minutes."/>
+
+    <meta property="og:title" content="Hugo CSS Override Failure: Why is everything the same but also different" />
+<meta property="og:description" content="I recently swapped my blog from Ghost to Hugo.
+While I liked the former (being MarkDown based, lightweight and easy to use), I adore Hugo as you can host it for free with GitHub Pages.
+Automation Whenever I setup a Hugo site I automate the deployment of it with Travis CI. This means that I can deploy updates to my blog just by editing and creating MarkDown files in GitHub, and as soon as they&rsquo;re committed to master the updated, rendered, website will be available in a matter of minutes." />
+<meta property="og:type" content="article" />
+<meta property="og:url" content="https://sammart.in/hugo-css-override-failure/" />
+<meta property="article:published_time" content="2020-02-04T20:26:21+00:00" />
+<meta property="article:modified_time" content="2020-02-04T20:26:21+00:00" />
+
+
+  </head>
+  <body>
+    <header class="app-header">
+      <a href="https://sammart.in/"><img class="app-header-avatar" src="/avatar.jpg" alt="Sam Martin" /></a>
+      <h1>Sam Martin</h1>
+      <p>Adventures in IT</p>
+      <div class="app-header-social">
+        
+      </div>
+    </header>
+    <main class="app-container">
+      
+  <article class="post">
+    <header class="post-header">
+      <h1 class ="post-title">Hugo CSS Override Failure: Why is everything the same but also different</h1>
+      <div class="post-meta">
+        <div>
+          <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-calendar">
+  <title>calendar</title>
+  <rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line>
+</svg>
+          Feb 4, 2020
+        </div>
+        <div>
+          <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-clock">
+  <title>clock</title>
+  <circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline>
+</svg>
+          4 min read
+        </div></div>
+    </header>
+    <div class="post-content">
+      <p>I recently swapped my blog from <a href="https://ghost.org/">Ghost</a> to <a href="https://gohugo.io/">Hugo</a>.<br>
+While I liked the former (being MarkDown based, lightweight and easy to use), I adore Hugo as you can host it for free with GitHub Pages.</p>
+<h2 id="automation">Automation</h2>
+<p>Whenever I setup a Hugo site I automate the deployment of it with <a href="https://travis-ci.com/">Travis CI</a>. This means that I can deploy updates to my blog just by editing and creating MarkDown files in GitHub, and as soon as they&rsquo;re committed to master the updated, rendered, website will be available in a matter of minutes.</p>
+<h2 id="styling">Styling</h2>
+<p>I customised the <a href="https://github.com/vaga/hugo-theme-m10c">m10c</a> theme using an SCSS override. (Which is another thing I love about hugo, how easy it is to style.)</p>
+<p>This worked by using the <a href="https://gohugo.io/templates/lookup-order/">Hugo template lookup order</a> to override the empty default file <code>assets/css/_extra.scss</code> the theme provides by creating my own file in the same path in my Hugo project. Because project files supersede theme files in Hugo&rsquo;s lookup order, my file takes presedence.</p>
+<p>It did exactly what I wanted, which was to make it look as much like my old Ghost theme as possible.
+<figure>
+    <img src="/images/2020/02/2020-02-04-Styled-Hugo.png"/> 
+</figure>
+</p>
+<h2 id="the-problem">The Problem</h2>
+<p>However, when I set up the Travis pipeline, instead of giving me the customised style above, it gave me a version of my site in the default styling.
+<figure>
+    <img src="/images/2020/02/2020-02-04-Unstyled-Hugo.png"/> 
+</figure>
+</p>
+<p>Weird&hellip;<br>
+I went over everything. I checked.</p>
+<ol>
+<li>The commands Travis was running to generate the files vs what I was running on my laptop</li>
+<li>The version of Hugo Travis was running</li>
+<li>The version of template Travis was downloading</li>
+<li>Whether I&rsquo;d accidentally <code>.gitignored</code> the wrong file</li>
+<li>Resetting the theme submodule</li>
+<li>Checking out the theme separately not as a submodule</li>
+<li>That I&rsquo;d ignored the <code>resources</code> folder in the Hugo project to avoid polluting it</li>
+<li>That I cleared the build folder in Travis before doing anything</li>
+<li>The SHAsums of all the files on my laptop vs when checked out on Travis</li>
+</ol>
+<p><em>Everything</em> was identical. I couldn&rsquo;t figure out what the issue was, so I uploaded the copy generated on my laptop and left it for a few weeks.</p>
+<p>When I came back, I swapped over to using a Docker image both locally and in Travis and it <em>STILL</em> rendered correctly on my laptop and incorrectly in Travis.</p>
+<h2 id="the-solution">The Solution</h2>
+<p>Eventually I discovered that in addition to the <code>resources</code> folder in the Hugo project (which holds a cache of rendered data from the last Hugo run, including CSS) that one got generated in the <em>THEME</em>.</p>
+<p>So I cleared that, and re-ran the dockerised Hugo on my laptop.</p>
+<pre><code>ERROR 2020/02/04 20:00:10 Transformation failed: TOCSS: failed to transform &quot;css/main.scss&quot; (text/x-scss): this feature is not available in your current Hugo version, see https://goo.gl/YMrWcn for more information
+</code></pre><p>Turns out that there&rsquo;s something called Hugo Extended which has the capability to render SCSS (a dynamic CSS templating framework I&rsquo;d never used before because I&rsquo;m a decade out of date with web design).<br>
+If you have Hugo Extended, your SCSS files will render and be cached in the <code>resources</code> folders of your project and theme every time you build your site in Hugo.<br>
+If you don&rsquo;t have Hugo extended it will throw an error.</p>
+<p>Okay, so that explains why it worked on my laptop (which had Hugo Extended) because my laptop rerendered the SCSS into CSS every time.<br>
+But why didn&rsquo;t it throw that error on Jenkins/Docker when it couldn&rsquo;t render the SCSS into CSS?</p>
+<p>Because as it turns out, the theme creator had (presumably accidentally) checked in the <code>resources</code> folder into Git. That meant that even though the version of Hugo running in Travis couldn&rsquo;t render the CSS (and thereby take into account my styling), it didn&rsquo;t throw an error because the default CSS was cached in the <code>resources</code> folder.</p>
+<p>All I had to do was swap Travis to run the <code>-ext</code> Hugo docker image, and <em>voila</em> the site was styled correctly!</p>
+<h2 id="travis-build">Travis Build</h2>
+<p>The final <code>travis.yml</code> looked like this:</p>
+<pre><code>services:
+  - docker
+before_install:
+  - docker pull klakegg/hugo:0.64.0-ext
+script:
+  - git clone https://github.com/Sam-Martin/hugo-theme-m10c.git themes/m10c
+  - |
+    docker run --rm -it \
+    -v $(pwd):/src \
+    -v $(pwd)/output:/target \
+    klakegg/hugo:0.64.0-ext
+deploy:
+  provider: pages
+  local_dir: output
+  github_token: &quot;$GITHUB_TOKEN&quot;
+  verbose: true
+  skip_cleanup: true
+  repo: Sam-Martin/sammartin.github.io
+  fqdn: sammart.in
+  target_branch: master
+</code></pre><p>Super simple, and all it needed was <code>klakegg/hugo:0.64.0-ext</code> instead of <code>klakegg/hugo:0.64.0</code>.</p>
+<p>Remember kids, error messages are a gift. When you get one, it is 1000x easier to figure out what&rsquo;s going on than if it errors without a message, or (as was the case here) it proceeds with insane behaviour.</p>
+
+    </div>
+    <div class="post-footer">
+      <div id="disqus_thread"></div>
+<script type="application/javascript">
+    var disqus_config = function () {
+    
+    
+    
+    };
+    (function() {
+        if (["localhost", "127.0.0.1"].indexOf(window.location.hostname) != -1) {
+            document.getElementById('disqus_thread').innerHTML = 'Disqus comments not available by default when the website is previewed locally.';
+            return;
+        }
+        var d = document, s = d.createElement('script'); s.async = true;
+        s.src = '//' + "sammartin" + '.disqus.com/embed.js';
+        s.setAttribute('data-timestamp', +new Date());
+        (d.head || d.body).appendChild(s);
+    })();
+</script>
+<noscript>Please enable JavaScript to view the <a href="https://disqus.com/?ref_noscript">comments powered by Disqus.</a></noscript>
+<a href="https://disqus.com" class="dsq-brlink">comments powered by <span class="logo-disqus">Disqus</span></a>
+    </div>
+  </article>
+
+    </main>
+  </body>
+</html>

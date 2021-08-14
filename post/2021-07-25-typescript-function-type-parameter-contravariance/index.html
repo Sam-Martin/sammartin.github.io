@@ -1,0 +1,364 @@
+<!doctype html>
+<html lang="en-gb">
+  <head>
+    <title>TypeScript Function Type Parameter Contravariance // Sam Martin</title>
+    <meta charset="utf-8" />
+    <meta name="generator" content="Hugo 0.64.0" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="author" content="Sam Martin" />
+    <meta name="description" content="" />
+    <link rel="stylesheet" href="https://sammart.in/css/main.min.a998572a1815565bbca4f2ca9babb1ae248504a1710ee90b7e336857f14fba27.css" />
+
+    
+<script type="application/javascript">
+var doNotTrack = false;
+if (!doNotTrack) {
+	(function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+	(i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+	m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+	})(window,document,'script','https://www.google-analytics.com/analytics.js','ga');
+	ga('create', 'UA-66377745-1', 'auto');
+	
+	ga('send', 'pageview');
+}
+</script>
+
+    <meta name="twitter:card" content="summary"/>
+<meta name="twitter:title" content="TypeScript Function Type Parameter Contravariance"/>
+<meta name="twitter:description" content="While reading the excellent &ldquo;Programming TypeScript: Making Your JavaScript Applications Scale&rdquo; by @bcherny I managed to confuse myself utterly.
+What does it mean for for function type parameters to be contravariant in TypeScript?
+Let&rsquo;s find out!"/>
+
+    <meta property="og:title" content="TypeScript Function Type Parameter Contravariance" />
+<meta property="og:description" content="While reading the excellent &ldquo;Programming TypeScript: Making Your JavaScript Applications Scale&rdquo; by @bcherny I managed to confuse myself utterly.
+What does it mean for for function type parameters to be contravariant in TypeScript?
+Let&rsquo;s find out!" />
+<meta property="og:type" content="article" />
+<meta property="og:url" content="https://sammart.in/post/2021-07-25-typescript-function-type-parameter-contravariance/" />
+<meta property="article:published_time" content="2021-07-25T10:13:40+00:00" />
+<meta property="article:modified_time" content="2021-07-25T10:13:40+00:00" />
+
+
+  </head>
+  <body>
+    <header class="app-header">
+      <a href="https://sammart.in/"><img class="app-header-avatar" src="/avatar.jpg" alt="Sam Martin" /></a>
+      <h1>Sam Martin</h1>
+      <p>Adventures in IT</p>
+      <div class="app-header-social">
+        
+      </div>
+    </header>
+    <main class="app-container">
+      
+  <article class="post">
+    <header class="post-header">
+      <h1 class ="post-title">TypeScript Function Type Parameter Contravariance</h1>
+      <div class="post-meta">
+        <div>
+          <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-calendar">
+  <title>calendar</title>
+  <rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line>
+</svg>
+          Jul 25, 2021
+        </div>
+        <div>
+          <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-clock">
+  <title>clock</title>
+  <circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline>
+</svg>
+          11 min read
+        </div></div>
+    </header>
+    <div class="post-content">
+      <p><strong>Table of Contents</strong></p>
+<div class="toc">
+  <nav id="TableOfContents">
+  <ul>
+    <li><a href="#my-contravariance-rabbit-hole">My Contravariance Rabbit Hole</a>
+      <ul>
+        <li><a href="#the-confusion">The Confusion</a></li>
+      </ul>
+    </li>
+    <li><a href="#understanding-the-question">Understanding the Question</a>
+      <ul>
+        <li><a href="#subtypes-and-supertypes">Subtypes and Supertypes</a></li>
+        <li><a href="#covariance-and-contravariance">Covariance and Contravariance</a></li>
+        <li><a href="#what-is-a-function-type">What is a function type?</a></li>
+        <li><a href="#why-are-most-types-covariant">Why are most types covariant?</a></li>
+        <li><a href="#what-are-function-type-parameters">What are function type parameters?</a></li>
+      </ul>
+    </li>
+    <li><a href="#why-are-function-type-parameters-contravariant">Why are function type parameters contravariant?</a>
+      <ul>
+        <li><a href="#hypothetical-covariant-function-type-parameter-example">Hypothetical covariant function type parameter example</a></li>
+      </ul>
+    </li>
+    <li><a href="#troubleshooting">Troubleshooting</a></li>
+    <li><a href="#further-reading">Further Reading</a></li>
+  </ul>
+</nav>
+</div>
+
+<h2 id="my-contravariance-rabbit-hole">My Contravariance Rabbit Hole</h2>
+<div class="note">
+<p><strong>Tip:</strong> Skip to <a href="#understanding-the-question">Understanding the Question</a> if this bit is intimidating/boring as I explain all the terms you need to know after this introduction. Yes it&rsquo;s like a recipe blog in that respect, don&rsquo;t judge me too harshly.</p>
+</div>
+<p>While reading the excellent <a href="https://www.amazon.co.uk/Programming-TypeScript-Making-JavaScript-Applications/dp/1492037656/">&ldquo;Programming TypeScript: Making Your JavaScript Applications Scale&rdquo;</a> by <a href="https://twitter.com/bcherny">@bcherny</a> I managed to confuse myself utterly.</p>
+<blockquote>
+<p>In TypeScript, every complex type is covariant in its members—objects, classes, arrays, and function return types—with one exception: function parameter types, which are contravariant.</p>
+<ul>
+<li><a href="https://www.amazon.co.uk/Programming-TypeScript-Making-JavaScript-Applications/dp/1492037656/">Programming TypeScript, Chapter 6</a></li>
+</ul>
+</blockquote>
+<p>This bit in particular:</p>
+<blockquote>
+<p>function parameter types [&hellip;] are contravariant.</p>
+</blockquote>
+<p>I read as meaning the type of an argument passed to a function should be a supertype of the parameter of the function.</p>
+<p>If this were true, then this code snippet would be valid:</p>
+<div class="highlight"><pre class="chroma"><code class="language-typescript" data-lang="typescript"><span class="kr">class</span> <span class="nx">SuperType</span> <span class="p">{</span>
+    <span class="kr">super</span><span class="o">:</span> <span class="kt">string</span> <span class="o">=</span> <span class="s1">&#39;super&#39;</span>
+<span class="p">}</span>
+
+<span class="kr">class</span> <span class="nx">SubType</span> <span class="kr">extends</span> <span class="nx">SuperType</span> <span class="p">{</span>
+    <span class="nx">sub</span>: <span class="kt">string</span> <span class="o">=</span> <span class="s1">&#39;sub&#39;</span>
+<span class="p">}</span>
+
+<span class="c1">// Define our function expecting a subtype
+</span><span class="c1"></span><span class="kd">function</span> <span class="nx">nonsenseExample</span><span class="p">(</span><span class="nx">a</span>: <span class="kt">SubType</span><span class="p">)</span><span class="o">:</span> <span class="k">void</span> <span class="p">{</span> <span class="p">}</span>
+
+<span class="c1">// Call our function, passing in a new object that is a supertype of what it expected
+</span><span class="c1"></span><span class="nx">nonsenseExample</span><span class="p">(</span><span class="k">new</span> <span class="nx">SuperType</span><span class="p">)</span>
+<span class="c1">// Argument of type &#39;SuperType&#39; is not assignable to parameter of type &#39;SubType&#39;.
+</span></code></pre></div>
+<p>Of course, it&rsquo;s not. It&rsquo;s complete nonsense. So that lead me down a rabbit hole re-reading the previous paragraphs over and over thinking I&rsquo;d misunderstood something until eventually&hellip;</p>
+<blockquote class="twitter-tweet"><p lang="en" dir="ltr">Oooh the contravariance of Typescript&#39;s function parameters refers to functions being subtypes of other functions, not the evaluation of whether an argument is a subtype of the parameter. 20 years of using arguments and parameters interchangeably rendered that unintelligible.</p>&mdash; Sam Martin 🌱 (@samjackmartin) <a href="https://twitter.com/samjackmartin/status/1418896064434905092?ref_src=twsrc%5Etfw">July 24, 2021</a></blockquote>
+<script async src="https://platform.twitter.com/widgets.js" charset="utf-8"></script>
+
+<p>I&rsquo;d successfully identified that we were talking about function types, but my journey was far from over. It was only after writing the entirety of this blog post that I felt like I had a good grasp on what was really being discussed.</p>
+<p>We are, very simply, talking about whether one function type can be assigned to another (is it a subtype of the other function?).</p>
+<div class="highlight"><pre class="chroma"><code class="language-typescript" data-lang="typescript"><span class="kr">class</span> <span class="nx">SuperType</span> <span class="p">{</span>
+    <span class="kr">super</span><span class="o">:</span> <span class="kt">string</span> <span class="o">=</span> <span class="s1">&#39;super&#39;</span>
+<span class="p">}</span>
+
+<span class="kr">class</span> <span class="nx">SubType</span> <span class="kr">extends</span> <span class="nx">SuperType</span> <span class="p">{</span>
+    <span class="nx">sub</span>: <span class="kt">string</span> <span class="o">=</span> <span class="s1">&#39;sub&#39;</span>
+<span class="p">}</span>
+
+<span class="c1">// Define the function types
+</span><span class="c1"></span><span class="nx">type</span> <span class="nx">TestCallbackFunctionType</span> <span class="o">=</span> <span class="p">(</span><span class="nx">a</span>: <span class="kt">SuperType</span><span class="p">)</span> <span class="o">=</span><span class="o">&gt;</span> <span class="k">void</span>
+<span class="nx">type</span> <span class="nx">CallbackFunctionType</span> <span class="o">=</span> <span class="p">(</span><span class="nx">b</span>: <span class="kt">SubType</span><span class="p">)</span> <span class="o">=</span><span class="o">&gt;</span> <span class="k">void</span>
+
+<span class="c1">// Initialise the variables with those types
+</span><span class="c1"></span><span class="kd">let</span> <span class="nx">testCallbackFunction</span>: <span class="kt">TestCallbackFunctionType</span>
+<span class="kd">let</span> <span class="nx">callbackFunction</span>: <span class="kt">CallbackFunctionType</span> <span class="o">=</span> <span class="p">(</span><span class="p">)</span> <span class="o">=</span><span class="o">&gt;</span> <span class="p">{</span> <span class="p">}</span>
+
+<span class="c1">// Try and assign a function of type CallbackFunctionType to a function of type TestCallbackFunctionType
+</span><span class="c1"></span><span class="nx">testCallbackFunction</span> <span class="o">=</span> <span class="nx">callbackFunction</span>
+<span class="c1">// Type &#39;CallbackFunctionType&#39; is not assignable to type &#39;TestCallbackFunctionType&#39;.
+</span><span class="c1"></span><span class="c1">//   Types of parameters &#39;b&#39; and &#39;a&#39; are incompatible.
+</span></code></pre></div>
+<p>The above example highlights what the sentence was actually talking about.</p>
+<blockquote>
+<p>A function is assignable to (is a subtype of) another function if all of the source parameters are supertypes of the target functions corresponding parameters.</p>
+</blockquote>
+<p>or to put it another way</p>
+<blockquote>
+<p>A function is assignable to (is a subtype of) another function if all of the <em>target</em> parameters are assignable to the corresponding <em>source</em> parameters.</p>
+</blockquote>
+<p>This is because function type parameter assignments are evaluated <em>contra</em> variantly not <em>co</em> variantly like other complex types.</p>
+<h3 id="the-confusion">The Confusion</h3>
+<p>The original wording in the book was absolutely correct: function parameter type assignments are evaluated contravariantly.<br>
+This is because function parameter type assignment is evaluated during an assignment of one function type to another function type.<br>
+You can never (as far as I know) assign a function parameter type to any type other than another function parameter type.<br>
+You <em>can</em> assign argument types to parameter types, but that is evaluated covariantly.</p>
+<p>What I  wholly misread into the original statement was that argument type assignments to parameter types are evaluated contravariantly, which is obviously not true in the slightest as shown above.</p>
+<p>Understanding what all this means and why it is the case will be the subject of this blog post.</p>
+<div class="note">
+<p><strong>Note:</strong><br>
+I&rsquo;m going to keep using the phrase &ldquo;function type parameter&rdquo; as opposed to &ldquo;function parameter type&rdquo; as although they mean the same thing and the difference is actually in what is being assigned to what, it may help avoid confusion along our way.</p>
+</div>
+<h2 id="understanding-the-question">Understanding the Question</h2>
+<p>To sum it up, the question is: (when operating in <code>&quot;strict&quot;: true</code> mode) why does the following not throw an error?</p>
+<div class="highlight"><pre class="chroma"><code class="language-typescript" data-lang="typescript"><span class="kr">class</span> <span class="nx">SuperType</span> <span class="p">{</span>
+    <span class="kr">super</span><span class="o">:</span> <span class="kt">string</span> <span class="o">=</span> <span class="s1">&#39;super&#39;</span>
+<span class="p">}</span>
+
+<span class="kr">class</span> <span class="nx">SubType</span> <span class="kr">extends</span> <span class="nx">SuperType</span> <span class="p">{</span>
+    <span class="nx">sub</span>: <span class="kt">string</span> <span class="o">=</span> <span class="s1">&#39;sub&#39;</span>
+<span class="p">}</span>
+
+<span class="kd">function</span> <span class="nx">test</span><span class="p">(</span><span class="nx">a</span>: <span class="kt">SuperType</span><span class="p">)</span><span class="o">:</span> <span class="k">void</span> <span class="p">{</span> <span class="p">}</span>
+
+<span class="c1">// Call test with a subtype of what it asked for
+</span><span class="c1"></span><span class="nx">test</span><span class="p">(</span><span class="k">new</span> <span class="nx">SubType</span><span class="p">)</span>
+</code></pre></div>
+<p>But this does?</p>
+<div class="highlight"><pre class="chroma"><code class="language-typescript" data-lang="typescript"><span class="kd">function</span> <span class="nx">test</span><span class="p">(</span><span class="nx">f</span><span class="o">:</span> <span class="p">(</span><span class="nx">a</span>: <span class="kt">SuperType</span><span class="p">)</span> <span class="o">=</span><span class="o">&gt;</span> <span class="k">void</span><span class="p">)</span><span class="o">:</span> <span class="k">void</span> <span class="p">{</span> <span class="p">}</span>
+
+<span class="c1">// Call test with a subtype of what it asked for
+</span><span class="c1"></span><span class="nx">test</span><span class="p">(</span><span class="p">(</span><span class="nx">a</span>: <span class="kt">SubType</span><span class="p">)</span><span class="o">:</span> <span class="k">void</span> <span class="p">{</span> <span class="p">}</span><span class="p">)</span>
+<span class="c1">//  Argument of type &#39;(a: SubType) =&gt; void&#39; is not assignable to parameter of type &#39;(a: SuperType) =&gt; void&#39;.
+</span><span class="c1"></span><span class="c1">//    Types of parameters &#39;a&#39; and &#39;a&#39; are incompatible.
+</span></code></pre></div>
+<p>In other words, why is it okay to pass a subtype as an argument to a function, but not as a parameter for a function passed as an argument?</p>
+<div class="note">
+<p><strong>Reminder:</strong><br>
+A <strong>parameter</strong> is the variable listed inside the parentheses in the function definition.<br>
+An <strong>argument</strong> is the value that is sent to the function when it is called.<br>
+- <a href="https://stackoverflow.com/a/59928588/336783">StackOverflow</a></p>
+</div>
+<h3 id="subtypes-and-supertypes">Subtypes and Supertypes</h3>
+<blockquote>
+<p>Type compatibility in TypeScript is based on structural subtyping. Structural typing is a way of relating types based solely on their members. This is in contrast with nominal typing.<br>
+- <a href="https://www.typescriptlang.org/docs/handbook/type-compatibility.html">Type Compatibility - TypeScriptLang</a></p>
+</blockquote>
+<p>Because TypeScript is structurally typed, <code>A</code> is a subtype of <code>B</code> if all of <code>B</code>'s members are found in <code>A</code>.<br>
+This is perhaps more intuitive if you think of <code>A</code> as extending <code>B</code>, as <code>A</code> will then naturally have <em>at least</em> all the members <code>B</code> does.</p>
+<p>A supertype is just the opposite relationship. <code>B</code> is a supertype of <code>A</code> if all of <code>B</code>'s members are found in <code>A</code>.</p>
+<h3 id="covariance-and-contravariance">Covariance and Contravariance</h3>
+<ul>
+<li><strong>Covariance:</strong> You want a <code>T</code> or a subtype of <code>T</code></li>
+<li><strong>Contravariance:</strong> You want a <code>T</code> or a supertype of <code>T</code></li>
+</ul>
+<p>Because TypeScript is structurally typed &ldquo;a <code>T</code>&rdquo; is just &ldquo;a shape with all the members of <code>T</code>&rdquo;, not necessarily a shape with the same type name!</p>
+<h3 id="what-is-a-function-type">What is a function type?</h3>
+<p>A function type is a type definition for a function. This can be declared either as a type alias, e.g.</p>
+<div class="highlight"><pre class="chroma"><code class="language-typescript" data-lang="typescript"><span class="nx">type</span> <span class="nx">TestCallbackFunction</span> <span class="o">=</span> <span class="p">(</span><span class="nx">a</span>: <span class="kt">SuperType</span><span class="p">)</span> <span class="o">=</span><span class="o">&gt;</span> <span class="k">void</span>
+<span class="kd">function</span> <span class="nx">test</span><span class="p">(</span><span class="nx">f</span>: <span class="kt">TestCallbackFunction</span><span class="p">)</span> <span class="p">{</span> <span class="p">}</span>
+</code></pre></div>
+<p>or as a function type expression:</p>
+<div class="highlight"><pre class="chroma"><code class="language-typescript" data-lang="typescript"><span class="kd">function</span> <span class="nx">test</span><span class="p">(</span><span class="nx">f</span><span class="o">:</span> <span class="p">(</span><span class="nx">a</span>: <span class="kt">SuperType</span><span class="p">)</span> <span class="o">=</span><span class="o">&gt;</span> <span class="k">void</span><span class="p">)</span><span class="o">:</span> <span class="k">void</span> <span class="p">{</span> <span class="p">}</span>
+</code></pre></div>
+<p>They are a way to annotate the types of the parameters and the return type of a function.</p>
+<h3 id="why-are-most-types-covariant">Why are most types covariant?</h3>
+<p>The purpose of restricting type assignability is to ensure type safety (i.e. prevent type errors).
+Restricting type assignment to either covariance (only allowing a type to be assigned to its supertypes or its  equal) or contravariance (only allowing a type to be assigned to subtypes or its equal) is intended to ensure that whatever code is being executed does not attempt to perform operations that the type it&rsquo;s performing them on does not support.</p>
+<p>To put this in real terms, one of the most common scenarios in which we rely on type assignability is when passing an argument into a function.</p>
+<div class="highlight"><pre class="chroma"><code class="language-typescript" data-lang="typescript"><span class="kd">function</span> <span class="nx">shoutyGreeter</span><span class="p">(</span><span class="nx">name</span>: <span class="kt">string</span><span class="p">)</span><span class="o">:</span> <span class="k">void</span> <span class="p">{</span>
+    <span class="nx">console</span><span class="p">.</span><span class="nx">log</span><span class="p">(</span><span class="s2">&#34;HELLO&#34;</span><span class="p">,</span> <span class="nx">name</span><span class="p">.</span><span class="nx">toUpperCase</span><span class="p">(</span><span class="p">)</span><span class="p">)</span>
+<span class="p">}</span>
+<span class="nx">shoutyGreeter</span><span class="p">(</span><span class="s2">&#34;Sam&#34;</span><span class="p">)</span>
+<span class="c1">// HELLO SAM
+</span></code></pre></div>
+<p>In our call to <code>shoutyGreeter</code> with the argument <code>&quot;Sam&quot;</code> TypeScript is making sure that the string <code>&quot;Sam&quot;</code> is covariant (a subtype of or structurally equal) to the type <code>string</code>.</p>
+<p>Great! Simple. We don&rsquo;t want an object to be passed in that is a supertype, or an unrelated type to <code>string</code> as we&rsquo;re calling <code>.toUpperCase()</code> on it and that method won&rsquo;t be present on say, a <code>number</code>.</p>
+<h3 id="what-are-function-type-parameters">What are function type parameters?</h3>
+<p>When considering the type assignability of function type parameters, we&rsquo;re trying to figure out whether the parameter of one function type is assignable to the parameter of another function type.</p>
+<p>The most common scenario for caring about function type parameter assignability is when you&rsquo;re passing a function as an argument to another function.</p>
+<div class="highlight"><pre class="chroma"><code class="language-typescript" data-lang="typescript"><span class="kd">function</span> <span class="nx">test</span><span class="p">(</span><span class="nx">f</span><span class="o">:</span> <span class="p">(</span><span class="nx">a</span>: <span class="kt">SuperType</span><span class="p">)</span> <span class="o">=</span><span class="o">&gt;</span> <span class="k">void</span><span class="p">)</span><span class="o">:</span> <span class="k">void</span> <span class="p">{</span> <span class="p">}</span>
+
+<span class="nx">test</span><span class="p">(</span><span class="p">(</span><span class="nx">a</span>: <span class="kt">SubType</span><span class="p">)</span><span class="o">:</span> <span class="k">void</span> <span class="p">{</span> <span class="p">}</span><span class="p">)</span>
+<span class="c1">// Argument of type &#39;(a: SubType) =&gt; void&#39; is not assignable to parameter of type &#39;(a: SuperType) =&gt; void&#39;.
+</span><span class="c1"></span><span class="c1">//   Types of parameters &#39;a&#39; and &#39;a&#39; are incompatible.
+</span></code></pre></div>
+<p>TypeScript is telling us that the type of parameter <code>a</code> (<code>SubType</code>) in the callback function we&rsquo;re passing in as an argument to <code>test</code> is not assignable to the type of parameter <code>a</code> (<code>SuperType</code>) in the function type of parameter <code>f</code> we&rsquo;re passing our callback into.</p>
+<p>Let&rsquo;s unpack that a little. We are talking about a bunch of different types here, so let&rsquo;s give them all unique names:</p>
+<div class="highlight"><pre class="chroma"><code class="language-typescript" data-lang="typescript"><span class="nx">type</span> <span class="nx">TestCallbackFunctionType</span> <span class="o">=</span> <span class="p">(</span><span class="nx">a</span>: <span class="kt">SuperType</span><span class="p">)</span> <span class="o">=</span><span class="o">&gt;</span> <span class="k">void</span>
+<span class="nx">type</span> <span class="nx">TestFunctionType</span> <span class="o">=</span> <span class="p">(</span><span class="nx">f</span>: <span class="kt">TestCallbackFunctionType</span><span class="p">)</span> <span class="o">=</span><span class="o">&gt;</span> <span class="k">void</span>
+<span class="kd">let</span> <span class="nx">test</span>: <span class="kt">TestFunctionType</span> <span class="o">=</span> <span class="kd">function</span> <span class="p">(</span><span class="nx">f</span><span class="p">)</span> <span class="p">{</span> <span class="p">}</span>
+
+<span class="nx">type</span> <span class="nx">CallbackFunctionType</span> <span class="o">=</span> <span class="p">(</span><span class="nx">b</span>: <span class="kt">SubType</span><span class="p">)</span> <span class="o">=</span><span class="o">&gt;</span> <span class="k">void</span>
+<span class="kd">let</span> <span class="nx">callbackFunction</span>: <span class="kt">CallbackFunctionType</span> <span class="o">=</span> <span class="p">(</span><span class="nx">b</span><span class="p">)</span> <span class="o">=</span><span class="o">&gt;</span> <span class="p">{</span> <span class="p">}</span>
+<span class="nx">test</span><span class="p">(</span><span class="nx">callbackFunction</span><span class="p">)</span>
+<span class="c1">//  Argument of type &#39;CallbackFunctionType&#39; is not assignable to parameter of type &#39;TestCallbackFunctionType&#39;.
+</span><span class="c1"></span><span class="c1">//    Types of parameters &#39;b&#39; and &#39;a&#39; are incompatible.
+</span></code></pre></div>
+<p>The above is functionally equivalent to the previous snippet.
+The only differences are:</p>
+<ol>
+<li>We&rsquo;ve given all our types, parameters, and functions unique names</li>
+<li><code>callbackFunction</code>'s parameter has been renamed to <code>b</code> to make it easier to talk about.</li>
+</ol>
+<p>TypeScript is comparing the type of parameter <code>b</code> of function type <code>CallbackFunctionType</code> with the type of parameter <code>a</code> of function type <code>TestCallbackFunctionType</code> and is complaining that <code>b</code> is not a supertype (or equal) to <code>a</code>.</p>
+<p>To restate it in the original terminology: TypeScript is complaining that function type parameter <code>b</code> is not contravariant to function type parameter <code>a</code>.</p>
+<h2 id="why-are-function-type-parameters-contravariant">Why are function type parameters contravariant?</h2>
+<p>In this scenario TypeScript is still trying to do the same thing it always does, make our type assignment as safe as possible.<br>
+So the question is: &ldquo;Why is it safer for function type parameter <code>b</code> to be contravariant to function type parameter <code>a</code>&rdquo;?</p>
+<p>It&rsquo;s safer because the function <code>test</code> which accepts the parameter <code>f</code> of type <code>TestCallbackFunctionType</code> is responsible for defining what argument (and therefore what type) gets passed into <code>f</code>.<br>
+This means that <code>test</code> is most likely passing an object of type <code>SuperType</code> to <code>callbackFunction</code> as an argument, but <code>callbackFunction</code> is expecting a <strong><code>SubType</code></strong>, which will have methods/attributes that <code>SuperType</code> does not, and will therefore do all sorts of type unsafe things with our poor innocent <code>SuperType</code> object.</p>
+<p>In other words if we were to allow covariant function type parameters, the actual object passed into the callback function as an argument would most likely be contravariant with the parameter type and therefore be unsafe.</p>
+<h3 id="hypothetical-covariant-function-type-parameter-example">Hypothetical covariant function type parameter example</h3>
+<p>Okay that&rsquo;s a lot of words, what would the problem look like in practice?<br>
+Let&rsquo;s go back to our simpler version of the problem.</p>
+<div class="highlight"><pre class="chroma"><code class="language-typescript" data-lang="typescript"><span class="kr">class</span> <span class="nx">SuperType</span> <span class="p">{</span>
+    <span class="kr">super</span><span class="o">:</span> <span class="kt">string</span> <span class="o">=</span> <span class="s1">&#39;super&#39;</span>
+<span class="p">}</span>
+
+<span class="kr">class</span> <span class="nx">SubType</span> <span class="kr">extends</span> <span class="nx">SuperType</span> <span class="p">{</span>
+    <span class="nx">sub</span>: <span class="kt">string</span> <span class="o">=</span> <span class="s1">&#39;sub&#39;</span>
+<span class="p">}</span>
+
+<span class="c1">// Define our test function with a parameter that is a function that expects a SuperType object
+</span><span class="c1"></span><span class="kd">function</span> <span class="nx">test</span><span class="p">(</span><span class="nx">f</span><span class="o">:</span> <span class="p">(</span><span class="nx">a</span>: <span class="kt">SuperType</span><span class="p">)</span> <span class="o">=</span><span class="o">&gt;</span> <span class="k">void</span><span class="p">)</span><span class="o">:</span> <span class="k">void</span> <span class="p">{</span>
+    <span class="nx">f</span><span class="p">(</span><span class="k">new</span> <span class="nx">SuperType</span><span class="p">)</span>
+<span class="p">}</span>
+
+<span class="c1">// Call our test function, passing in a function that expects a SubType object
+</span><span class="c1"></span><span class="nx">test</span><span class="p">(</span><span class="p">(</span><span class="nx">b</span>: <span class="kt">SubType</span><span class="p">)</span><span class="o">:</span> <span class="k">void</span> <span class="o">=</span><span class="o">&gt;</span> <span class="p">{</span>
+    <span class="nx">console</span><span class="p">.</span><span class="nx">log</span><span class="p">(</span><span class="nx">b</span><span class="p">.</span><span class="nx">sub</span><span class="p">)</span>
+ <span class="p">}</span><span class="p">)</span>
+<span class="c1">// Argument of type &#39;(b: SubType) =&gt; void&#39; is not assignable to parameter of type &#39;(a: SuperType) =&gt; void&#39;.
+</span><span class="c1"></span><span class="c1">//  Types of parameters &#39;b&#39; and &#39;a&#39; are incompatible.
+</span></code></pre></div>
+<p>Our callback function is expecting a <code>SubType</code> called <code>b</code> and so is going to call <code>console.log</code> with <code>b.sub</code> as an argument, which it thinks should be fine as objects of type <code>SubType</code> always have the attribute <code>sub</code>.<br>
+<strong>BUT</strong> the callback function is being called inside <code>test</code> which is passing a new <code>SuperType</code> object into our callback <code>f</code> as that&rsquo;s what it said <code>f</code> should expect so that&rsquo;s what it&rsquo;s damn well going to give it. <br>
+As <code>sub</code> doesn&rsquo;t exist on <code>SuperType</code>, our <code>console.log</code> would log <code>undefined</code> if TypeScript allowed it to get that far.</p>
+<p>Let&rsquo;s walk through the code one more time:</p>
+<ol>
+<li>We call <code>test()</code> passing in our callback function that expects a <code>SubType</code> as <code>b</code></li>
+<li>Test calls our callback <code>f(new SuperType)</code> passing in a new object of type <code>SuperType</code></li>
+<li>Inside our callback function, it runs <code>console.log(b.sub)</code> expecting <code>b</code> to be a <code>SubType</code></li>
+<li><code>b</code> does not have a <code>sub</code> member and so <code>console.log()</code> will log <code>undefined</code></li>
+</ol>
+<p>Instead of all that happening, TypeScript (with strict mode enabled) will throw an error telling us that <code>Types of parameters 'b' and 'a' are incompatible.</code>. Thanks TypeScript strict mode!</p>
+<p>So that&rsquo;s it basically, TypeScript&rsquo;s strict mode prevents you from using covariant function type parameters because if it didn&rsquo;t, you&rsquo;d end up potentially passing contravariant arguments into the function when it was called, which is fundamentally unsafe.</p>
+<p>I hope this didn&rsquo;t hurt your head as much to read as much as it hurt mine to write, but either way thank you for bearing with it as writing this has helped me cement my understanding immensely!</p>
+<h2 id="troubleshooting">Troubleshooting</h2>
+<p>If you&rsquo;re thinking: &ldquo;Hey, this whole thing is bogus, this doesn&rsquo;t error on my machine at all!&rdquo;
+this all only applies if you&rsquo;re using <code>&quot;strict&quot;: true</code> in your <code>tsconfig.json</code>, enable that and you should see the error! Normally function type parameters assignability <a href="https://www.typescriptlang.org/docs/handbook/type-compatibility.html#function-parameter-bivariance">is determined bivariantly</a>.</p>
+<div class="highlight"><pre class="chroma"><code class="language-json" data-lang="json"><span class="p">{</span>
+    <span class="nt">&#34;compilerOptions&#34;</span><span class="p">:</span> <span class="p">{</span>
+        <span class="nt">&#34;strict&#34;</span><span class="p">:</span> <span class="kc">true</span><span class="p">,</span>
+    <span class="p">}</span>
+<span class="p">}</span></code></pre></div>
+<p>If you&rsquo;re wondering why function type parameters are byvariant unless you enable the strict flag, you can read more here: <a href="https://github.com/Microsoft/TypeScript/wiki/FAQ#why-are-function-parameters-bivariant">Why are function parameters bivariant?</a> and <a href="https://github.com/microsoft/TypeScript/pull/18654">the PR in which <code>--strictFunctionTypes</code> was introduced</a>.</p>
+<h2 id="further-reading">Further Reading</h2>
+<ul>
+<li><a href="https://www.stephanboyer.com/post/132/what-are-covariance-and-contravariance">What are covariance and contravariance? - Stephan Boyer</a></li>
+<li><a href="https://www.typescriptlang.org/docs/handbook/2/functions.html">More on Functions - TypeScriptLang</a></li>
+<li><a href="https://www.typescriptlang.org/docs/handbook/type-compatibility.html#comparing-two-functions">Type Compatibility - Compariing Two Functions - TypeScriptLang</a></li>
+<li><a href="https://www.typescriptlang.org/docs/handbook/release-notes/typescript-2-6.html">TypeScript 2.6 - Strict function types</a></li>
+<li><a href="https://github.com/Microsoft/TypeScript/wiki/FAQ#why-are-function-parameters-bivariant">Why are function parameters bivariant?</a></li>
+<li><a href="https://github.com/microsoft/TypeScript/pull/18654">The PR where function parameter type contravariance was introduced</a></li>
+</ul>
+
+    </div>
+    <div class="post-footer">
+      <div id="disqus_thread"></div>
+<script type="application/javascript">
+    var disqus_config = function () {
+    
+    
+    
+    };
+    (function() {
+        if (["localhost", "127.0.0.1"].indexOf(window.location.hostname) != -1) {
+            document.getElementById('disqus_thread').innerHTML = 'Disqus comments not available by default when the website is previewed locally.';
+            return;
+        }
+        var d = document, s = d.createElement('script'); s.async = true;
+        s.src = '//' + "sammartin" + '.disqus.com/embed.js';
+        s.setAttribute('data-timestamp', +new Date());
+        (d.head || d.body).appendChild(s);
+    })();
+</script>
+<noscript>Please enable JavaScript to view the <a href="https://disqus.com/?ref_noscript">comments powered by Disqus.</a></noscript>
+<a href="https://disqus.com" class="dsq-brlink">comments powered by <span class="logo-disqus">Disqus</span></a>
+    </div>
+  </article>
+
+    </main>
+  </body>
+</html>

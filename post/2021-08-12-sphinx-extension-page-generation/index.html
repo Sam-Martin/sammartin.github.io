@@ -1,0 +1,222 @@
+<!doctype html>
+<html lang="en-gb">
+  <head>
+    <title>Sphinx Extension Page Generation // Sam Martin</title>
+    <meta charset="utf-8" />
+    <meta name="generator" content="Hugo 0.64.0" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="author" content="Sam Martin" />
+    <meta name="description" content="" />
+    <link rel="stylesheet" href="https://sammart.in/css/main.min.a998572a1815565bbca4f2ca9babb1ae248504a1710ee90b7e336857f14fba27.css" />
+
+    
+<script type="application/javascript">
+var doNotTrack = false;
+if (!doNotTrack) {
+	(function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+	(i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+	m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+	})(window,document,'script','https://www.google-analytics.com/analytics.js','ga');
+	ga('create', 'UA-66377745-1', 'auto');
+	
+	ga('send', 'pageview');
+}
+</script>
+
+    <meta name="twitter:card" content="summary"/>
+<meta name="twitter:title" content="Sphinx Extension Page Generation"/>
+<meta name="twitter:description" content="Following on from a previous blog post on writing Sphinx extensions, a natural requirement is the ability to automatically generate not just content on a single page with your extension, but also content on wholly new pages! Let&rsquo;s see how that&rsquo;s done."/>
+
+    <meta property="og:title" content="Sphinx Extension Page Generation" />
+<meta property="og:description" content="Following on from a previous blog post on writing Sphinx extensions, a natural requirement is the ability to automatically generate not just content on a single page with your extension, but also content on wholly new pages! Let&rsquo;s see how that&rsquo;s done." />
+<meta property="og:type" content="article" />
+<meta property="og:url" content="https://sammart.in/post/2021-08-12-sphinx-extension-page-generation/" />
+<meta property="article:published_time" content="2021-08-12T19:03:12+00:00" />
+<meta property="article:modified_time" content="2021-08-12T19:03:12+00:00" />
+
+
+  </head>
+  <body>
+    <header class="app-header">
+      <a href="https://sammart.in/"><img class="app-header-avatar" src="/avatar.jpg" alt="Sam Martin" /></a>
+      <h1>Sam Martin</h1>
+      <p>Adventures in IT</p>
+      <div class="app-header-social">
+        
+      </div>
+    </header>
+    <main class="app-container">
+      
+  <article class="post">
+    <header class="post-header">
+      <h1 class ="post-title">Sphinx Extension Page Generation</h1>
+      <div class="post-meta">
+        <div>
+          <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-calendar">
+  <title>calendar</title>
+  <rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line>
+</svg>
+          Aug 12, 2021
+        </div>
+        <div>
+          <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-clock">
+  <title>clock</title>
+  <circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline>
+</svg>
+          5 min read
+        </div></div>
+    </header>
+    <div class="post-content">
+      <h2 id="objective">Objective</h2>
+<p>Following on from <a href="https://sammart.in/post/2021-05-10-external-data-sphinx-extension/">External Data Sphinx Extension</a>, a natural requirement is the ability to automatically generate not just content on a single page with your extension, but also content on wholly new pages!</p>
+<p><img src="/images/2021/08/write_pages_index.png" alt="Sphinx pages"></p>
+<h2 id="the-story-so-far">The story so far</h2>
+<p>You can find all the code for this example in the repo here: <a href="https://github.com/Sam-Martin/sphinx-write-pages-tutorial">https://github.com/Sam-Martin/sphinx-write-pages-tutorial</a></p>
+<p>If you&rsquo;re confused about what Sphinx is, why you would want to write an extension, or how to get started, you should check out the start of the <a href="https://sammart.in/post/2021-05-10-external-data-sphinx-extension/">External Data Sphinx Extension</a> post.</p>
+<h2 id="the-basis-for-this-example">The basis for this example</h2>
+<p>My basis for writing this example in this fashion is by following along the approximate process of the built in <a href="https://www.sphinx-doc.org/en/master/usage/extensions/autosummary.html">autosummary extension</a> provided by Sphinx.</p>
+<p>You can see the full code for this extension <a href="https://github.com/sphinx-doc/sphinx/tree/4.x/sphinx/ext/autosummary">on GitHub</a>. Any mistakes I make in this implementation are my own, and you should defer to the autosummary extension as the canonical way to do this if you want a more complete example.</p>
+<h2 id="writing-the-extension">Writing the extension</h2>
+<p>We&rsquo;ll start with the usual Sphinx build and creation of an <code>_ext</code> subfolder.</p>
+<div class="highlight"><pre class="chroma"><code class="language-shell" data-lang="shell">$ sphinx-quickstart 
+Welcome to the Sphinx 4.0.0 quickstart utility.
+...
+
+$ mkdir _ext
+$ touch _ext/write_pages.py</code></pre></div>
+<p>Our folder now looks like this:</p>
+<p><img src="/images/2021/08/folder_contents.png" alt="Folder contents"></p>
+<p>As we open up our new <code>write_pages.py</code> we&rsquo;ll need to create four things.</p>
+<ol>
+<li><code>main</code> function</li>
+<li><code>setup</code> function</li>
+<li><code>ListPagesDirective</code> class</li>
+<li><code>WritePages</code> class</li>
+</ol>
+<p>The <code>setup</code> function and <code>&lt;something&gt;Directive</code> class we&rsquo;ve seen before, so what are the other two?</p>
+<h3 id="the-writepages-class">The <code>WritePages</code> class</h3>
+<p>This is the class that is going to write our <code>.rst</code> files to disk so that Sphinx can discover them and render the rst within into html/pdf/whatever.
+This needs to be seperate from our directive because it needs to run on the <a href="https://www.sphinx-doc.org/en/master/extdev/appapi.html#event-builder-inited"><code>builder-inited</code></a> event which we will subscribe to with <code>app.connect()</code> and which does not provide the arguments required to instantiate our directive.<br>
+We also use it as the source of truth for our list of files.</p>
+<h4 id="getting-lists-of-files-from-directives">Getting lists of files from directives</h4>
+<p><a href="https://github.com/sphinx-doc/sphinx/blob/1acdf4f8735d40b875161a94c1e0124aceb14217/sphinx/ext/autosummary/generate.py#L463">autosummary does its own parsing of <code>.rst</code> files</a> in order to pull in the list of files to create from its <code>.. autosummary::</code> directives. It does this, presumably, because it wants to create <code>.rst</code> files, which needs to be done before the <code>.rst</code> files are read by Sphinx, otherwise they won&rsquo;t get included in the final output.<br>
+If it waited until Sphinx had found all instances of its directives in the other <code>.rst</code> files it would be too late to write its own <code>.rst</code> files to be read by Sphinx.</p>
+<p>Creating custom directive parsing is well outside the scope of this tutorial, so we&rsquo;ll be using a simple list as a class property on <code>WritePages</code> as our source list of files to create.</p>
+<h3 id="the-main-function">The <code>main</code> function</h3>
+<p>This function is a little shim that instantiates our <code>WritePages</code> class and calls the <code>write_pages</code> method on it.
+In theory we could have the <code>main</code> function write the pages itself, but we need a source for the list of pages that&rsquo;s accessible both in the <code>main</code> function and in our <code>ListPagesDirective</code> class.</p>
+<h3 id="the-code">The code</h3>
+<div class="highlight"><pre class="chroma"><code class="language-python" data-lang="python"><span class="kn">import</span> <span class="nn">pathlib</span>
+<span class="kn">from</span> <span class="nn">typing</span> <span class="kn">import</span> <span class="n">List</span>
+
+<span class="kn">from</span> <span class="nn">docutils.frontend</span> <span class="kn">import</span> <span class="n">OptionParser</span>
+<span class="kn">from</span> <span class="nn">docutils.nodes</span> <span class="kn">import</span> <span class="n">Node</span>
+<span class="kn">from</span> <span class="nn">docutils.utils</span> <span class="kn">import</span> <span class="n">new_document</span>
+<span class="kn">from</span> <span class="nn">sphinx.application</span> <span class="kn">import</span> <span class="n">Sphinx</span>
+<span class="kn">from</span> <span class="nn">sphinx.parsers</span> <span class="kn">import</span> <span class="n">RSTParser</span>
+<span class="kn">from</span> <span class="nn">sphinx.util.docutils</span> <span class="kn">import</span> <span class="n">SphinxDirective</span>
+
+
+<span class="k">class</span> <span class="nc">WritePages</span><span class="p">:</span>
+    <span class="n">files</span> <span class="o">=</span> <span class="p">[</span><span class="n">f</span><span class="sa"></span><span class="s2">&#34;</span><span class="s2">file_{i}</span><span class="s2">&#34;</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">10</span><span class="p">)</span><span class="p">]</span>
+    <span class="n">relative_path</span> <span class="o">=</span> <span class="n">pathlib</span><span class="o">.</span><span class="n">Path</span><span class="p">(</span><span class="vm">__file__</span><span class="p">)</span><span class="o">.</span><span class="n">parent</span><span class="o">.</span><span class="n">absolute</span><span class="p">(</span><span class="p">)</span> <span class="o">/</span> <span class="sa"></span><span class="s2">&#34;</span><span class="s2">..</span><span class="s2">&#34;</span>
+
+    <span class="k">def</span> <span class="nf">write_pages</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-</span><span class="o">&gt;</span> <span class="bp">None</span><span class="p">:</span>
+        <span class="k">for</span> <span class="n">file_name</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">files</span><span class="p">:</span>
+            <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">relative_path</span> <span class="o">/</span> <span class="n">f</span><span class="sa"></span><span class="s2">&#34;</span><span class="s2">{file_name}.rst</span><span class="s2">&#34;</span><span class="p">,</span> <span class="sa"></span><span class="s2">&#34;</span><span class="s2">w</span><span class="s2">&#34;</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
+                <span class="n">f</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="n">f</span><span class="sa"></span><span class="s2">&#34;</span><span class="s2">Test - {file_name}</span><span class="se">\n</span><span class="s2">==============</span><span class="s2">&#34;</span><span class="p">)</span>
+
+
+<span class="k">class</span> <span class="nc">ListPagesDirective</span><span class="p">(</span><span class="n">SphinxDirective</span><span class="p">)</span><span class="p">:</span>
+    <span class="n">has_content</span> <span class="o">=</span> <span class="bp">True</span>
+
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">*</span><span class="o">*</span><span class="n">kwargs</span><span class="p">)</span> <span class="o">-</span><span class="o">&gt;</span> <span class="bp">None</span><span class="p">:</span>
+        <span class="nb">super</span><span class="p">(</span><span class="p">)</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">*</span><span class="o">*</span><span class="n">kwargs</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">pages</span> <span class="o">=</span> <span class="n">WritePages</span><span class="p">(</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">run</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-</span><span class="o">&gt;</span> <span class="n">List</span><span class="p">[</span><span class="n">Node</span><span class="p">]</span><span class="p">:</span>
+        <span class="n">rst</span> <span class="o">=</span> <span class="sa"></span><span class="s2">&#34;</span><span class="s2">.. toctree::</span><span class="se">\n</span><span class="s2">&#34;</span>
+        <span class="n">rst</span> <span class="o">+</span><span class="o">=</span> <span class="sa"></span><span class="s2">&#34;</span><span class="s2">   :maxdepth: 2</span><span class="se">\n</span><span class="se">\n</span><span class="s2">&#34;</span>
+        <span class="k">for</span> <span class="n">file_name</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">pages</span><span class="o">.</span><span class="n">files</span><span class="p">:</span>
+            <span class="n">rst</span> <span class="o">+</span><span class="o">=</span> <span class="n">f</span><span class="sa"></span><span class="s2">&#34;</span><span class="s2">   {file_name}</span><span class="se">\n</span><span class="s2">&#34;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">parse_rst</span><span class="p">(</span><span class="n">rst</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">parse_rst</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">text</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-</span><span class="o">&gt;</span> <span class="n">List</span><span class="p">[</span><span class="n">Node</span><span class="p">]</span><span class="p">:</span>
+        <span class="o">.</span><span class="o">.</span><span class="o">.</span>
+
+
+<span class="k">def</span> <span class="nf">main</span><span class="p">(</span><span class="n">app</span><span class="p">:</span> <span class="n">Sphinx</span><span class="p">)</span> <span class="o">-</span><span class="o">&gt;</span> <span class="bp">None</span><span class="p">:</span>
+    <span class="n">w</span> <span class="o">=</span> <span class="n">WritePages</span><span class="p">(</span><span class="p">)</span>
+    <span class="n">w</span><span class="o">.</span><span class="n">write_pages</span><span class="p">(</span><span class="p">)</span>
+
+
+<span class="k">def</span> <span class="nf">setup</span><span class="p">(</span><span class="n">app</span><span class="p">:</span> <span class="n">Sphinx</span><span class="p">)</span> <span class="o">-</span><span class="o">&gt;</span> <span class="bp">None</span><span class="p">:</span>
+    <span class="n">app</span><span class="o">.</span><span class="n">add_directive</span><span class="p">(</span><span class="sa"></span><span class="s2">&#34;</span><span class="s2">list-pages</span><span class="s2">&#34;</span><span class="p">,</span> <span class="n">ListPagesDirective</span><span class="p">)</span>
+    <span class="n">app</span><span class="o">.</span><span class="n">connect</span><span class="p">(</span><span class="sa"></span><span class="s2">&#34;</span><span class="s2">builder-inited</span><span class="s2">&#34;</span><span class="p">,</span> <span class="n">main</span><span class="p">)</span></code></pre></div>
+<p>For brevity I&rsquo;ve omitted the <code>parse_rst</code> method contents, again you can see the full implementation <a href="https://github.com/Sam-Martin/sphinx-write-pages-tutorial/blob/main/_ext/write_pages.py">in GitHub</a>.</p>
+<p>Let&rsquo;s go through this one step at a time.</p>
+<ol>
+<li>Our <code>main</code> will be called, which will</li>
+<li>Call our <code>write_pages</code> method which will</li>
+<li>Write the raw contents of our <code>.rst</code> files specified in <code>WritePages.files</code></li>
+<li>Then our <code>ListPagesDirective</code>'s <code>run</code> method will be called which will get the list of files from <code>WritePages.files</code> and turn it into a <code>toctree</code>, then convert that into docutils nodes with <code>parse_rst</code> and return it.</li>
+</ol>
+<div class="note">
+<p><strong>Tip:</strong> The <code>WritePages.write_pages</code> method wants the file names <em>with</em> <code>.rst</code> but when writing the <code>toctree</code> in <code>ListPagesDirective.run</code> we want them <em>without</em> the <code>.rst</code> extension. This always catches me out when writing one of these!</p>
+</div>
+<h3 id="adding-the-toctree">Adding the toctree</h3>
+<p>We can now use our <code>list-pages</code> directive to add a toctree!</p>
+<div class="highlight"><pre class="chroma"><code class="language-rst" data-lang="rst"><span class="gh">Write Pages Tutorial</span>
+<span class="gh">====================</span>
+<span class="err">
+</span><span class="err"></span><span class="cp">.. list-pages ::</span></code></pre></div>
+<p>And now we can run</p>
+<div class="highlight"><pre class="chroma"><code class="language-shell" data-lang="shell">$ make html</code></pre></div>
+<p>Now you&rsquo;ll notice that your folder now has 10 new files in it!</p>
+<div class="highlight"><pre class="chroma"><code class="language-shell" data-lang="shell">$ ls -lha
+total <span class="m">120</span>
+...
+-rw-r--r--   <span class="m">1</span> sammartin  staff    28B <span class="m">13</span> Aug 17:53 file_1.rst
+-rw-r--r--   <span class="m">1</span> sammartin  staff    28B <span class="m">13</span> Aug 17:53 file_2.rst
+-rw-r--r--   <span class="m">1</span> sammartin  staff    28B <span class="m">13</span> Aug 17:53 file_3.rst
+-rw-r--r--   <span class="m">1</span> sammartin  staff    28B <span class="m">13</span> Aug 17:53 file_4.rst
+-rw-r--r--   <span class="m">1</span> sammartin  staff    28B <span class="m">13</span> Aug 17:53 file_5.rst
+-rw-r--r--   <span class="m">1</span> sammartin  staff    28B <span class="m">13</span> Aug 17:53 file_6.rst
+-rw-r--r--   <span class="m">1</span> sammartin  staff    28B <span class="m">13</span> Aug 17:53 file_7.rst
+-rw-r--r--   <span class="m">1</span> sammartin  staff    28B <span class="m">13</span> Aug 17:53 file_8.rst
+-rw-r--r--   <span class="m">1</span> sammartin  staff    28B <span class="m">13</span> Aug 17:53 file_9.rst</code></pre></div>
+<p>And when you open your new <code>_build/html/index.html</code> file you will see your rendered <code>toctree</code> and the links to the newly created files!</p>
+<p><img src="/images/2021/08/write_pages_index.png" alt="Sphinx pages"></p>
+<p>🎉 Congratulations! You&rsquo;ve written a Sphinx extension that can organise your auto-generated documentation into multiple sub pages!</p>
+<h3 id="on-the-deletion-of-files">On the deletion of files</h3>
+<p>If you play around with the list of files specified in <code>WritePages.files</code> you may notice that there&rsquo;s no mechanism to delete the files. This behaviour reflects that of autosummary.</p>
+<p>If you have extremely volatile file lists and are likely to be frequently orphaning pages it may be a good idea to configure your extension to write your files to a dedicated subfolder that&rsquo;s deleted as part of your <code>make</code> command.</p>
+
+    </div>
+    <div class="post-footer">
+      <div id="disqus_thread"></div>
+<script type="application/javascript">
+    var disqus_config = function () {
+    
+    
+    
+    };
+    (function() {
+        if (["localhost", "127.0.0.1"].indexOf(window.location.hostname) != -1) {
+            document.getElementById('disqus_thread').innerHTML = 'Disqus comments not available by default when the website is previewed locally.';
+            return;
+        }
+        var d = document, s = d.createElement('script'); s.async = true;
+        s.src = '//' + "sammartin" + '.disqus.com/embed.js';
+        s.setAttribute('data-timestamp', +new Date());
+        (d.head || d.body).appendChild(s);
+    })();
+</script>
+<noscript>Please enable JavaScript to view the <a href="https://disqus.com/?ref_noscript">comments powered by Disqus.</a></noscript>
+<a href="https://disqus.com" class="dsq-brlink">comments powered by <span class="logo-disqus">Disqus</span></a>
+    </div>
+  </article>
+
+    </main>
+  </body>
+</html>

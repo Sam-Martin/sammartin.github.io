@@ -1,0 +1,325 @@
+<!doctype html>
+<html lang="en-gb">
+  <head>
+    <title>Writing a simple external data oriented Sphinx extension // Sam Martin</title>
+    <meta charset="utf-8" />
+    <meta name="generator" content="Hugo 0.64.0" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="author" content="Sam Martin" />
+    <meta name="description" content="" />
+    <link rel="stylesheet" href="https://sammart.in/css/main.min.a998572a1815565bbca4f2ca9babb1ae248504a1710ee90b7e336857f14fba27.css" />
+
+    
+<script type="application/javascript">
+var doNotTrack = false;
+if (!doNotTrack) {
+	(function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+	(i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+	m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+	})(window,document,'script','https://www.google-analytics.com/analytics.js','ga');
+	ga('create', 'UA-66377745-1', 'auto');
+	
+	ga('send', 'pageview');
+}
+</script>
+
+    <meta name="twitter:card" content="summary"/>
+<meta name="twitter:title" content="Writing a simple external data oriented Sphinx extension"/>
+<meta name="twitter:description" content="Sphinx is an extremely powerful and elegant way to generate documentation from code. In this guide we&rsquo;re going to explore how to write a simple Sphinx extension that pulls in data from outside our normal RST files and displays it in any way RST allows us."/>
+
+    <meta property="og:title" content="Writing a simple external data oriented Sphinx extension" />
+<meta property="og:description" content="Sphinx is an extremely powerful and elegant way to generate documentation from code. In this guide we&rsquo;re going to explore how to write a simple Sphinx extension that pulls in data from outside our normal RST files and displays it in any way RST allows us." />
+<meta property="og:type" content="article" />
+<meta property="og:url" content="https://sammart.in/post/2021-05-10-external-data-sphinx-extension/" />
+<meta property="article:published_time" content="2021-05-10T15:24:25+01:00" />
+<meta property="article:modified_time" content="2021-05-10T15:24:25+01:00" />
+
+
+  </head>
+  <body>
+    <header class="app-header">
+      <a href="https://sammart.in/"><img class="app-header-avatar" src="/avatar.jpg" alt="Sam Martin" /></a>
+      <h1>Sam Martin</h1>
+      <p>Adventures in IT</p>
+      <div class="app-header-social">
+        
+      </div>
+    </header>
+    <main class="app-container">
+      
+  <article class="post">
+    <header class="post-header">
+      <h1 class ="post-title">Writing a simple external data oriented Sphinx extension</h1>
+      <div class="post-meta">
+        <div>
+          <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-calendar">
+  <title>calendar</title>
+  <rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line>
+</svg>
+          May 10, 2021
+        </div>
+        <div>
+          <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-clock">
+  <title>clock</title>
+  <circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline>
+</svg>
+          6 min read
+        </div></div>
+    </header>
+    <div class="post-content">
+      <h1 id="what-is-sphinx">What is Sphinx?</h1>
+<p>I love Sphinx. I was a little hesitant about RST at first coming from a MARKDOWN OR DEATH background I was
+nervous about it being Yet Another Markup Language to learn like wikicode and its ilk, but I was quickly won
+over by the power of directives.</p>
+<p>But let&rsquo;s backup. Sphinx allows you to build a website like those you&rsquo;ve seen under the <a href="readthedocs.io">readthedocs.io</a> domain like <a href="https://boto3.amazonaws.com/v1/documentation/api/latest/index.html">Boto3</a>.</p>
+<p>I built <a href="https://www.cloudwanderer.io">CloudWanderer&rsquo;s</a> documentation with Sphinx, and that automatically generates page after page of documentation by pulling in data from CloudWanderer and Boto3 and merging them together in a way that makes sense.</p>
+<p>Here&rsquo;s how I did it.</p>
+<h1 id="creating-a-new-sphinx-project">Creating a new Sphinx project</h1>
+<p>Grab yourself an empty folder and let&rsquo;s install and initialise a new Sphinx project.</p>
+<div class="highlight"><pre class="chroma"><code class="language-bash" data-lang="bash">$ pip install sphinx sphinx_rtd_theme
+$ sphinx-quickstart
+
+Welcome to the Sphinx 4.0.0 quickstart utility.
+Selected root path: .
+
+&gt; Separate <span class="nb">source</span> and build directories <span class="o">(</span>y/n<span class="o">)</span> <span class="o">[</span>n<span class="o">]</span>:
+&gt; Project name: Test
+&gt; Author name<span class="o">(</span>s<span class="o">)</span>: Sam
+&gt; Project release <span class="o">[</span><span class="o">]</span>:
+&gt; Project language <span class="o">[</span>en<span class="o">]</span>:
+
+Creating file ...
+
+Finished: An initial directory structure has been created.</code></pre></div>
+<p>Great! Now open up the <code>conf.py</code> that&rsquo;s been created and change
+<div class="highlight"><pre class="chroma"><code class="language-python" data-lang="python"><span class="n">extensions</span> <span class="o">=</span> <span class="p">[</span><span class="p">]</span></code></pre></div>
+to
+<div class="highlight"><pre class="chroma"><code class="language-python" data-lang="python"><span class="n">extensions</span> <span class="o">=</span> <span class="p">[</span><span class="sa"></span><span class="s2">&#34;</span><span class="s2">sphinx_rtd_theme</span><span class="s2">&#34;</span><span class="p">]</span></code></pre></div>
+and
+<div class="highlight"><pre class="chroma"><code class="language-python" data-lang="python"><span class="n">html_theme</span> <span class="o">=</span> <span class="sa"></span><span class="s2">&#34;</span><span class="s2">alabaster</span><span class="s2">&#34;</span></code></pre></div>
+to
+<div class="highlight"><pre class="chroma"><code class="language-python" data-lang="python"><span class="n">html_theme</span> <span class="o">=</span> <span class="sa"></span><span class="s2">&#34;</span><span class="s2">sphinx_rtd_theme</span><span class="s2">&#34;</span></code></pre></div></p>
+<p>This will replace the slightly old school default theme with the read the docs theme and make us feel a bit more like we&rsquo;re in 2021!</p>
+<h2 id="build-html">Build HTML</h2>
+<p>Now you can build and open the html</p>
+<h3 id="macos">MacOS</h3>
+<div class="highlight"><pre class="chroma"><code class="language-bash" data-lang="bash">$ make html
+$ open _build/html/index.html</code></pre></div>
+<h3 id="powershell-on-windows">PowerShell on Windows</h3>
+<div class="highlight"><pre class="chroma"><code class="language-powershell" data-lang="powershell"><span class="p">&gt;</span> <span class="p">.</span><span class="p">/</span><span class="n">make</span><span class="p">.</span><span class="n">bat</span> <span class="n">html</span>
+<span class="p">&gt;</span> <span class="nb">ii </span><span class="n">_build</span><span class="p">/</span><span class="n">html</span><span class="p">/</span><span class="n">index</span><span class="p">.</span><span class="n">html</span></code></pre></div>
+<h3 id="voila-a-newly-built-sphinx-documentation-page">Voila! A newly built Sphinx documentation page!</h3>
+<p><img src="/images/2021/05/test-html.png" alt="Newly built Sphinx site"></p>
+<h3 id="writing-plain-old-rst">Writing plain old RST</h3>
+<p>Open up <code>index.rst</code> and remove everything under:</p>
+<div class="highlight"><pre class="chroma"><code class="language-rst" data-lang="rst">Welcome to Test&#39;s documentation!<span class="err">
+</span><span class="err"></span>================================</code></pre></div>
+<hr>
+<p><strong>Tip:</strong> you don&rsquo;t want to remove that, as that&rsquo;s the RST equivalent of a H1 header.)</p>
+<hr>
+<p>After that, type in any old thing you like, I find the best source of information on RST Sphinx markup is <a href="https://sublime-and-sphinx-guide.readthedocs.io/en/latest/index.html">Sublime and Sphinx Guide</a>, just ignore the fact that it&rsquo;s geared towards Sublime!</p>
+<p>Once you&rsquo;ve saved your <code>index.rst</code> with your new text, run <code>make html</code> or <code>./make.bat html</code> and refresh your page.</p>
+<p><img src="/images/2021/05/any-old-thing.png" alt="Newly built Sphinx site"></p>
+<h1 id="writing-an-extension">Writing an extension.</h1>
+<p>Sphinx has a bunch of built in extensions, the most often used ones being things like <a href="https://www.sphinx-doc.org/en/master/usage/extensions/autodoc.html">autodoc</a> and <a href="https://www.sphinx-doc.org/en/master/usage/extensions/doctest.html">doctest</a> which respectively automatically generate documentation from your code&rsquo;s docstrings and allow you test the example code snippets you write into your documentation. Both of these are MIND blowingly awesome and you should check them out.</p>
+<p>The tutorial I&rsquo;m outlining here is based heavily on <a href="https://www.sphinx-doc.org/en/master/development/tutorials/todo.html">the tutorial from the official Sphinx documentation</a>, streamlined a bit for my learning style, with a few extra bits sprinkled in to answer some of the things I found difficult to track down and understand when I went through it the first time.</p>
+<h2 id="use-case">Use Case</h2>
+<p>Sphinx&rsquo;s extensions are <em>hugely</em> powerful, and we&rsquo;re going to use it to bring data in from JSON files and make them part of our documentation in a useful fashion.</p>
+<h2 id="create-a-base-extension">Create a base extension</h2>
+<p>Start off by creating a folder called <code>_ext</code> with a file <code>my_first_sphinx_extension.py</code> inside it.
+Your folder structure should now look a little like this.</p>
+<div class="highlight"><pre class="chroma"><code class="language-bash" data-lang="bash">$ tree -L <span class="m">2</span>
+.
+├── Makefile
+├── _build
+│   ├── doctrees
+│   └── html
+├── _ext
+│   └── my_first_sphinx_extension.py
+├── _static
+├── _templates
+├── conf.py
+├── index.rst
+└── make.bat</code></pre></div>
+<p>Open up your <code>my_first_sphinx_extension.py</code> file and enter in the following:</p>
+<div class="highlight"><pre class="chroma"><code class="language-python" data-lang="python"><span class="kn">from</span> <span class="nn">docutils</span> <span class="kn">import</span> <span class="n">nodes</span>
+<span class="kn">from</span> <span class="nn">sphinx.util.docutils</span> <span class="kn">import</span> <span class="n">SphinxDirective</span>
+
+
+<span class="k">class</span> <span class="nc">ShowJsonDirective</span><span class="p">(</span><span class="n">SphinxDirective</span><span class="p">)</span><span class="p">:</span>
+    <span class="n">has_content</span> <span class="o">=</span> <span class="bp">True</span>
+
+    <span class="k">def</span> <span class="nf">run</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-</span><span class="o">&gt;</span> <span class="nb">list</span><span class="p">:</span>
+        <span class="k">return</span> <span class="p">[</span><span class="n">nodes</span><span class="o">.</span><span class="n">paragraph</span><span class="p">(</span><span class="sa"></span><span class="s2">&#34;</span><span class="s2">&#34;</span><span class="p">,</span> <span class="sa"></span><span class="s2">&#34;</span><span class="s2">Hello World.</span><span class="s2">&#34;</span><span class="p">)</span><span class="p">]</span>
+
+
+<span class="k">def</span> <span class="nf">setup</span><span class="p">(</span><span class="n">app</span><span class="p">:</span> <span class="nb">object</span><span class="p">)</span> <span class="o">-</span><span class="o">&gt;</span> <span class="nb">dict</span><span class="p">:</span>
+    <span class="n">app</span><span class="o">.</span><span class="n">add_directive</span><span class="p">(</span><span class="sa"></span><span class="s2">&#34;</span><span class="s2">show-json</span><span class="s2">&#34;</span><span class="p">,</span> <span class="n">ShowJsonDirective</span><span class="p">)</span></code></pre></div>
+<p>Now update <code>conf.py</code> to change</p>
+<div class="highlight"><pre class="chroma"><code class="language-python" data-lang="python"><span class="n">extensions</span> <span class="o">=</span> <span class="p">[</span><span class="sa"></span><span class="s2">&#34;</span><span class="s2">sphinx_rtd_theme</span><span class="s2">&#34;</span><span class="p">]</span></code></pre></div>
+<p>to include your new extension</p>
+<div class="highlight"><pre class="chroma"><code class="language-python" data-lang="python"><span class="n">extensions</span> <span class="o">=</span> <span class="p">[</span><span class="sa"></span><span class="s2">&#34;</span><span class="s2">sphinx_rtd_theme</span><span class="s2">&#34;</span><span class="p">,</span> <span class="sa"></span><span class="s2">&#34;</span><span class="s2">my_first_sphinx_extension</span><span class="s2">&#34;</span><span class="p">]</span></code></pre></div>
+<p>and also add</p>
+<div class="highlight"><pre class="chroma"><code class="language-python" data-lang="python"><span class="kn">import</span> <span class="nn">sys</span>
+<span class="kn">import</span> <span class="nn">os</span>
+
+<span class="n">sys</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">abspath</span><span class="p">(</span><span class="sa"></span><span class="s2">&#34;</span><span class="s2">./_ext</span><span class="s2">&#34;</span><span class="p">)</span><span class="p">)</span></code></pre></div>
+<p>anywhere in your <code>conf.py</code> so that it can find your new extension</p>
+<p>Then add a reference to your new directive into <code>index.rst</code></p>
+<p>e.g.</p>
+<div class="highlight"><pre class="chroma"><code class="language-rst" data-lang="rst"><span class="gh">Welcome to Test&#39;s documentation!</span>
+<span class="gh">================================</span>
+<span class="err">
+</span><span class="err"></span><span class="err">
+</span><span class="err"></span><span class="cp">.. show-json ::</span></code></pre></div>
+<p>And there we go!
+<img src="/images/2021/05/hello-world.png" alt="Hello World">
+Well&hellip; that&rsquo;s a bit underwhelming, let&rsquo;s get started with formatting our output at least!</p>
+<h2 id="formatting">Formatting</h2>
+<p>This is the bit I could not for the life of me figure out how to do when I read the official tutorial.
+You&rsquo;ll notice that we added our <code>Hello World</code> in a <code>docutils.nodes.paragraph</code> object.
+So where do we find other semantic objects for us to place into our content?</p>
+<p>So far as I can tell the official canonical reference is here: <a href="https://docutils.sourceforge.io/docs/ref/doctree.html">Docutils docs</a> but as it&rsquo;s ironically littered with <code>to be completed</code> I found it incredibly hard to find and understand the formatting elements I needed.</p>
+<p>So let&rsquo;s just use RST! Screw creating the objects themselves, let&rsquo;s just build out some RST markup and we&rsquo;ll let Sphinx handle the rest!</p>
+<p>To do that we need to add the following <code>parse_rst</code> method to our <code>ShowJsonDirective</code> class</p>
+<div class="highlight"><pre class="chroma"><code class="language-python" data-lang="python">    <span class="k">def</span> <span class="nf">parse_rst</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">text</span><span class="p">)</span><span class="p">:</span>
+        <span class="n">parser</span> <span class="o">=</span> <span class="n">RSTParser</span><span class="p">(</span><span class="p">)</span>
+        <span class="n">parser</span><span class="o">.</span><span class="n">set_application</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">env</span><span class="o">.</span><span class="n">app</span><span class="p">)</span>
+        <span class="n">settings</span> <span class="o">=</span> <span class="n">OptionParser</span><span class="p">(</span>
+            <span class="n">defaults</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">env</span><span class="o">.</span><span class="n">settings</span><span class="p">,</span>
+            <span class="n">components</span><span class="o">=</span><span class="p">(</span><span class="n">RSTParser</span><span class="p">,</span><span class="p">)</span><span class="p">,</span>
+            <span class="n">read_config_files</span><span class="o">=</span><span class="bp">True</span><span class="p">,</span>
+        <span class="p">)</span><span class="o">.</span><span class="n">get_default_values</span><span class="p">(</span><span class="p">)</span>
+        <span class="n">document</span> <span class="o">=</span> <span class="n">new_document</span><span class="p">(</span><span class="sa"></span><span class="s2">&#34;</span><span class="s2">&lt;rst-doc&gt;</span><span class="s2">&#34;</span><span class="p">,</span> <span class="n">settings</span><span class="o">=</span><span class="n">settings</span><span class="p">)</span>
+        <span class="n">parser</span><span class="o">.</span><span class="n">parse</span><span class="p">(</span><span class="n">text</span><span class="p">,</span> <span class="n">document</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">document</span><span class="o">.</span><span class="n">children</span></code></pre></div>
+<p>This method expects us to supply 1 argument which is a multi-line string of RST markup and will return the
+corresponding docutils objects so we can return them from our extension&rsquo;s <code>run</code> method.</p>
+<p>To use this, we can change our content to look like this:</p>
+<div class="highlight"><pre class="chroma"><code class="language-python" data-lang="python">    <span class="k">def</span> <span class="nf">run</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-</span><span class="o">&gt;</span> <span class="nb">list</span><span class="p">:</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">parse_rst</span><span class="p">(</span><span class="sa"></span><span class="s2">&#34;</span><span class="se">\n</span><span class="s2">* hello</span><span class="se">\n</span><span class="s2">* world</span><span class="s2">&#34;</span><span class="p">)</span></code></pre></div>
+<p>This uses the <code>*</code> RST markup to render an unordered list with two elements (hello and world).</p>
+<p>Our whole extension file now looks like (note the new <code>new_document</code> import):</p>
+<div class="highlight"><pre class="chroma"><code class="language-python" data-lang="python"><span class="kn">from</span> <span class="nn">sphinx.parsers</span> <span class="kn">import</span> <span class="n">RSTParser</span>
+<span class="kn">from</span> <span class="nn">docutils.frontend</span> <span class="kn">import</span> <span class="n">OptionParser</span>
+<span class="kn">from</span> <span class="nn">sphinx.util.docutils</span> <span class="kn">import</span> <span class="n">SphinxDirective</span>
+<span class="kn">from</span> <span class="nn">docutils.utils</span> <span class="kn">import</span> <span class="n">new_document</span>
+
+
+<span class="k">class</span> <span class="nc">ShowJsonDirective</span><span class="p">(</span><span class="n">SphinxDirective</span><span class="p">)</span><span class="p">:</span>
+    <span class="n">has_content</span> <span class="o">=</span> <span class="bp">True</span>
+
+    <span class="k">def</span> <span class="nf">run</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-</span><span class="o">&gt;</span> <span class="nb">list</span><span class="p">:</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">parse_rst</span><span class="p">(</span><span class="sa"></span><span class="s2">&#34;</span><span class="se">\n</span><span class="s2">* hello</span><span class="se">\n</span><span class="s2">* world</span><span class="s2">&#34;</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">parse_rst</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">text</span><span class="p">)</span><span class="p">:</span>
+        <span class="n">parser</span> <span class="o">=</span> <span class="n">RSTParser</span><span class="p">(</span><span class="p">)</span>
+        <span class="n">parser</span><span class="o">.</span><span class="n">set_application</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">env</span><span class="o">.</span><span class="n">app</span><span class="p">)</span>
+
+        <span class="n">settings</span> <span class="o">=</span> <span class="n">OptionParser</span><span class="p">(</span>
+            <span class="n">defaults</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">env</span><span class="o">.</span><span class="n">settings</span><span class="p">,</span>
+            <span class="n">components</span><span class="o">=</span><span class="p">(</span><span class="n">RSTParser</span><span class="p">,</span><span class="p">)</span><span class="p">,</span>
+            <span class="n">read_config_files</span><span class="o">=</span><span class="bp">True</span><span class="p">,</span>
+        <span class="p">)</span><span class="o">.</span><span class="n">get_default_values</span><span class="p">(</span><span class="p">)</span>
+        <span class="n">document</span> <span class="o">=</span> <span class="n">new_document</span><span class="p">(</span><span class="sa"></span><span class="s2">&#34;</span><span class="s2">&lt;rst-doc&gt;</span><span class="s2">&#34;</span><span class="p">,</span> <span class="n">settings</span><span class="o">=</span><span class="n">settings</span><span class="p">)</span>
+        <span class="n">parser</span><span class="o">.</span><span class="n">parse</span><span class="p">(</span><span class="n">text</span><span class="p">,</span> <span class="n">document</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">document</span><span class="o">.</span><span class="n">children</span>
+
+
+<span class="k">def</span> <span class="nf">setup</span><span class="p">(</span><span class="n">app</span><span class="p">:</span> <span class="nb">object</span><span class="p">)</span> <span class="o">-</span><span class="o">&gt;</span> <span class="nb">dict</span><span class="p">:</span>
+    <span class="n">app</span><span class="o">.</span><span class="n">add_directive</span><span class="p">(</span><span class="sa"></span><span class="s2">&#34;</span><span class="s2">show-json</span><span class="s2">&#34;</span><span class="p">,</span> <span class="n">ShowJsonDirective</span><span class="p">)</span></code></pre></div>
+<p>And if we run <code>make html</code> and refresh the page again we get&hellip;</p>
+<p><img src="/images/2021/05/unordered-list.png" alt="A successfully rendered unordered list"></p>
+<hr>
+<p><strong>Tip:</strong> If you run <code>make html</code> after editing your extension and nothing seems to have changed, it may be because Sphinx hasn&rsquo;t detected any change in the doc source (because, well, there hasn&rsquo;t been one!). You can force Sphinx to generate it again by removing the <code>_build</code> directory with <code>rm -rf _build &amp;&amp; make html</code></p>
+<hr>
+<h2 id="hooking-up-the-json">Hooking up the JSON</h2>
+<p>Now the easy part! Let&rsquo;s make this dynamic!</p>
+<p>Write a file called <code>airports.json</code> inside the base directory (alongside <code>conf.py</code>) and place the following inside it.
+<div class="highlight"><pre class="chroma"><code class="language-json" data-lang="json"><span class="p">[</span>
+    <span class="p">{</span><span class="nt">&#34;Name&#34;</span><span class="p">:</span> <span class="s2">&#34;Heathrow&#34;</span><span class="p">,</span> <span class="nt">&#34;Url&#34;</span><span class="p">:</span> <span class="s2">&#34;https://www.heathrow.com/&#34;</span><span class="p">}</span><span class="p">,</span>
+    <span class="p">{</span><span class="nt">&#34;Name&#34;</span><span class="p">:</span> <span class="s2">&#34;Gatwick&#34;</span><span class="p">,</span> <span class="nt">&#34;Url&#34;</span><span class="p">:</span> <span class="s2">&#34;https://www.gatwickairport.com/&#34;</span><span class="p">}</span><span class="p">,</span>
+    <span class="p">{</span><span class="nt">&#34;Name&#34;</span><span class="p">:</span> <span class="s2">&#34;Luton&#34;</span><span class="p">,</span> <span class="nt">&#34;Url&#34;</span><span class="p">:</span> <span class="s2">&#34;https://www.london-luton.co.uk/&#34;</span><span class="p">}</span>
+<span class="p">]</span></code></pre></div></p>
+<p>Now update your extension&rsquo;s file to the following:</p>
+<div class="highlight"><pre class="chroma"><code class="language-python" data-lang="python"><span class="kn">import</span> <span class="nn">json</span>
+
+<span class="kn">from</span> <span class="nn">sphinx.parsers</span> <span class="kn">import</span> <span class="n">RSTParser</span>
+<span class="kn">from</span> <span class="nn">docutils.frontend</span> <span class="kn">import</span> <span class="n">OptionParser</span>
+<span class="kn">from</span> <span class="nn">sphinx.util.docutils</span> <span class="kn">import</span> <span class="n">SphinxDirective</span>
+<span class="kn">from</span> <span class="nn">docutils.utils</span> <span class="kn">import</span> <span class="n">new_document</span>
+
+
+<span class="k">class</span> <span class="nc">ShowJsonDirective</span><span class="p">(</span><span class="n">SphinxDirective</span><span class="p">)</span><span class="p">:</span>
+    <span class="n">has_content</span> <span class="o">=</span> <span class="bp">True</span>
+
+    <span class="k">def</span> <span class="nf">run</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-</span><span class="o">&gt;</span> <span class="nb">list</span><span class="p">:</span>
+        <span class="n">rst</span> <span class="o">=</span> <span class="sa"></span><span class="s2">&#34;</span><span class="s2">&#34;</span>
+        <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="sa"></span><span class="s2">&#34;</span><span class="s2">airports.json</span><span class="s2">&#34;</span><span class="p">,</span> <span class="sa"></span><span class="s2">&#34;</span><span class="s2">r</span><span class="s2">&#34;</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
+            <span class="n">airports</span> <span class="o">=</span> <span class="n">json</span><span class="o">.</span><span class="n">load</span><span class="p">(</span><span class="n">f</span><span class="p">)</span>
+        <span class="k">for</span> <span class="n">airport</span> <span class="ow">in</span> <span class="n">airports</span><span class="p">:</span>
+            <span class="n">rst</span> <span class="o">+</span><span class="o">=</span> <span class="n">f</span><span class="sa"></span><span class="s2">&#34;</span><span class="s2">* `{airport[</span><span class="s2">&#39;</span><span class="s2">Name</span><span class="s2">&#39;</span><span class="s2">]} &lt;{airport[</span><span class="s2">&#39;</span><span class="s2">Url</span><span class="s2">&#39;</span><span class="s2">]}&gt;`_</span><span class="se">\n</span><span class="s2">&#34;</span>
+        <span class="k">print</span><span class="p">(</span><span class="n">rst</span><span class="p">)</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">parse_rst</span><span class="p">(</span><span class="n">rst</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">parse_rst</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">text</span><span class="p">)</span><span class="p">:</span>
+        <span class="n">parser</span> <span class="o">=</span> <span class="n">RSTParser</span><span class="p">(</span><span class="p">)</span>
+        <span class="n">parser</span><span class="o">.</span><span class="n">set_application</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">env</span><span class="o">.</span><span class="n">app</span><span class="p">)</span>
+
+        <span class="n">settings</span> <span class="o">=</span> <span class="n">OptionParser</span><span class="p">(</span>
+            <span class="n">defaults</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">env</span><span class="o">.</span><span class="n">settings</span><span class="p">,</span>
+            <span class="n">components</span><span class="o">=</span><span class="p">(</span><span class="n">RSTParser</span><span class="p">,</span><span class="p">)</span><span class="p">,</span>
+            <span class="n">read_config_files</span><span class="o">=</span><span class="bp">True</span><span class="p">,</span>
+        <span class="p">)</span><span class="o">.</span><span class="n">get_default_values</span><span class="p">(</span><span class="p">)</span>
+        <span class="n">document</span> <span class="o">=</span> <span class="n">new_document</span><span class="p">(</span><span class="sa"></span><span class="s2">&#34;</span><span class="s2">&lt;rst-doc&gt;</span><span class="s2">&#34;</span><span class="p">,</span> <span class="n">settings</span><span class="o">=</span><span class="n">settings</span><span class="p">)</span>
+        <span class="n">parser</span><span class="o">.</span><span class="n">parse</span><span class="p">(</span><span class="n">text</span><span class="p">,</span> <span class="n">document</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">document</span><span class="o">.</span><span class="n">children</span>
+
+
+<span class="k">def</span> <span class="nf">setup</span><span class="p">(</span><span class="n">app</span><span class="p">:</span> <span class="nb">object</span><span class="p">)</span> <span class="o">-</span><span class="o">&gt;</span> <span class="nb">dict</span><span class="p">:</span>
+    <span class="n">app</span><span class="o">.</span><span class="n">add_directive</span><span class="p">(</span><span class="sa"></span><span class="s2">&#34;</span><span class="s2">show-json</span><span class="s2">&#34;</span><span class="p">,</span> <span class="n">ShowJsonDirective</span><span class="p">)</span></code></pre></div>
+<p>This will take our JSON, and convert it into the following RST:</p>
+<div class="highlight"><pre class="chroma"><code class="language-rst" data-lang="rst"><span class="m">*</span> <span class="s">`Heathrow </span><span class="si">&lt;https://www.heathrow.com&gt;</span><span class="s">`_</span><span class="err">
+</span><span class="err"></span><span class="m">*</span> <span class="s">`Gatwick </span><span class="si">&lt;https://www.gatwickairport.com/&gt;</span><span class="s">`_</span><span class="err">
+</span><span class="err"></span>* <span class="s">`Luton </span><span class="si">&lt;https://www.london-luton.co.uk/&gt;</span><span class="s">`_</span></code></pre></div>
+<p>Which creates a list of links as per the standard RST link syntax!
+The <code>print</code> will also make the above appear so that we can see the RST before it&rsquo;s rendered when we run <code>make html</code>.</p>
+<p>Once you have run <code>make html</code> again you can see our beautiful auto-generated output!</p>
+<p><img src="/images/2021/05/london-heathrow-gatwick.png" alt="A rendered list of links"></p>
+<h1 id="conclusion--further-reading">Conclusion &amp; Further Reading</h1>
+<p>That&rsquo;s all there is to it! It&rsquo;s really easy to get started with Sphinx extensions.</p>
+<p>You can find the full code <a href="https://github.com/Sam-Martin/sphinx-read-from-json-extension-tutorial/tree/main">on GitHub</a>.</p>
+<ul>
+<li><a href="https://www.sphinx-doc.org/en/master/development/tutorials/helloworld.html">Sphinx Extension Tutorial: Hello World</a></li>
+<li><a href="https://www.sphinx-doc.org/en/master/development/tutorials/todo.html">Sphinx Extension Tutorial: Todo Extension</a></li>
+<li><a href="https://www.sphinx-doc.org/en/master/development/tutorials/recipe.html">Sphinx Extension Tutorial: Recipe Extension</a></li>
+</ul>
+
+    </div>
+    <div class="post-footer">
+      <div id="disqus_thread"></div>
+<script type="application/javascript">
+    var disqus_config = function () {
+    
+    
+    
+    };
+    (function() {
+        if (["localhost", "127.0.0.1"].indexOf(window.location.hostname) != -1) {
+            document.getElementById('disqus_thread').innerHTML = 'Disqus comments not available by default when the website is previewed locally.';
+            return;
+        }
+        var d = document, s = d.createElement('script'); s.async = true;
+        s.src = '//' + "sammartin" + '.disqus.com/embed.js';
+        s.setAttribute('data-timestamp', +new Date());
+        (d.head || d.body).appendChild(s);
+    })();
+</script>
+<noscript>Please enable JavaScript to view the <a href="https://disqus.com/?ref_noscript">comments powered by Disqus.</a></noscript>
+<a href="https://disqus.com" class="dsq-brlink">comments powered by <span class="logo-disqus">Disqus</span></a>
+    </div>
+  </article>
+
+    </main>
+  </body>
+</html>

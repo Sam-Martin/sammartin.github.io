@@ -1,0 +1,252 @@
+<!doctype html>
+<html lang="en-gb">
+  <head>
+    <title>Querying Appsync With Python // Sam Martin</title>
+    <meta charset="utf-8" />
+    <meta name="generator" content="Hugo 0.64.0" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="author" content="Sam Martin" />
+    <meta name="description" content="" />
+    <link rel="stylesheet" href="https://sammart.in/css/main.min.a998572a1815565bbca4f2ca9babb1ae248504a1710ee90b7e336857f14fba27.css" />
+
+    
+<script type="application/javascript">
+var doNotTrack = false;
+if (!doNotTrack) {
+	(function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+	(i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+	m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+	})(window,document,'script','https://www.google-analytics.com/analytics.js','ga');
+	ga('create', 'UA-66377745-1', 'auto');
+	
+	ga('send', 'pageview');
+}
+</script>
+
+    <meta name="twitter:card" content="summary"/>
+<meta name="twitter:title" content="Querying Appsync With Python"/>
+<meta name="twitter:description" content="AWS AppSync is a really easy way to quickly assemble a GraphQL API to interact with data from DynamoDB, Lambda, ElasticSearch, RDS, or other HTTP endpoints.
+You don&rsquo;t have to create an API Gateway, then fiddle around with hooking it up with DynamoDB mappings, or lambdas in the middle. You define a data model, queries, and mutations, and AppSync provides an endpoint for you to query it. Hell it&rsquo;ll even go off and create the DynamoDB for you if you use the wizard."/>
+
+    <meta property="og:title" content="Querying Appsync With Python" />
+<meta property="og:description" content="AWS AppSync is a really easy way to quickly assemble a GraphQL API to interact with data from DynamoDB, Lambda, ElasticSearch, RDS, or other HTTP endpoints.
+You don&rsquo;t have to create an API Gateway, then fiddle around with hooking it up with DynamoDB mappings, or lambdas in the middle. You define a data model, queries, and mutations, and AppSync provides an endpoint for you to query it. Hell it&rsquo;ll even go off and create the DynamoDB for you if you use the wizard." />
+<meta property="og:type" content="article" />
+<meta property="og:url" content="https://sammart.in/post/2020-05-17-querying-appsync-with-python/" />
+<meta property="article:published_time" content="2020-05-17T16:08:25+01:00" />
+<meta property="article:modified_time" content="2020-05-17T16:08:25+01:00" />
+
+
+  </head>
+  <body>
+    <header class="app-header">
+      <a href="https://sammart.in/"><img class="app-header-avatar" src="/avatar.jpg" alt="Sam Martin" /></a>
+      <h1>Sam Martin</h1>
+      <p>Adventures in IT</p>
+      <div class="app-header-social">
+        
+      </div>
+    </header>
+    <main class="app-container">
+      
+  <article class="post">
+    <header class="post-header">
+      <h1 class ="post-title">Querying Appsync With Python</h1>
+      <div class="post-meta">
+        <div>
+          <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-calendar">
+  <title>calendar</title>
+  <rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line>
+</svg>
+          May 17, 2020
+        </div>
+        <div>
+          <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-clock">
+  <title>clock</title>
+  <circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline>
+</svg>
+          5 min read
+        </div></div>
+    </header>
+    <div class="post-content">
+      <h1 id="aws-appsync">AWS AppSync</h1>
+<p>AWS AppSync is a really easy way to quickly assemble a GraphQL API to interact with data from DynamoDB, Lambda, ElasticSearch, RDS, or other HTTP endpoints.</p>
+<p>You don&rsquo;t have to create an API Gateway, then fiddle around with hooking it up with DynamoDB mappings, or lambdas in the middle. You define a data model, queries, and mutations, and AppSync provides an endpoint for you to query it. Hell it&rsquo;ll even go off and create the DynamoDB for you if you use the wizard.</p>
+<p>This spike was my first interaction with GraphQL full stop as I&rsquo;ve always historically worked with JSON APIs, so in this I&rsquo;m not going to assume you know anything about GraphQL (as I sure as shit don&rsquo;t!).</p>
+<h1 id="graphql-vs-rest">GraphQL vs REST</h1>
+<p>There are a billion different articles on the pros and cons, but the short answer is that GraphQL provides a lot of flexibility in what data</p>
+<h1 id="setting-up-appsync">Setting up AppSync</h1>
+<p>I chose to start using the Wizard without a sample project so I could build it up myself to understand it better.</p>
+<p><img src="/images/2020/05/2020-05-17-AppSync-Getting-Started.png" alt="AppSync Getting Started"></p>
+<p>Let&rsquo;s create a very simple data structure to list our favourite movies.</p>
+<p><img src="/images/2020/05/2020-05-17-AppSync-Create-a-Model.png" alt="AppSync Create a Model"></p>
+<p>Name it
+<img src="/images/2020/05/2020-05-17-AppSync-Create-Resources.png" alt="AppSync Create Resources"></p>
+<p>Done! Now we can query it! In the background AWS went off and created an API Endpoint, DynamoDB Table, and a bunch of GraphQL definitions to define how we&rsquo;re allowed to query the API.<br>
+It&rsquo;s now dumped us at the Query page, which is a nice way to get started.</p>
+<p><img src="/images/2020/05/2020-05-17-AppSync-Queries.png" alt="AppSync Queries"></p>
+<p>Go ahead and click the orange Play button to <code>createFavouriteMovies</code>. Some dummy data will then appear on the right hand side as the API response to our create request.</p>
+<p>You can now hit play again, and hit <code>listFavouriteMovies</code> (it will look <em>identical</em> however because we only have the one record for now!).</p>
+<p>Now we need to figure out how to query the API outside AWS though!</p>
+<h1 id="querying-appsync-with-python">Querying AppSync with Python</h1>
+<p>You&rsquo;ve probably noticed the message in green at the top which invites you to &ldquo;learn how to integrate [your new API] with your app.&quot;, which takes you to this page.</p>
+<p><img src="/images/2020/05/2020-05-17-AppSync-Integrate-With-Your-App.png" alt="AppSync Queries"></p>
+<p>Which.. uh.. doesn&rsquo;t have a lot of Python on it. Appsync is pretty Web and Mobile oriented and offers some <em>great</em> features to this effect such as websockets and offline data management in React. We don&rsquo;t care about any of that though! We want Python!</p>
+<p>Go to the Settings section and you&rsquo;ll find what you need to get started.</p>
+<p><img src="/images/2020/05/2020-05-17-AppSync-Settings.png" alt="AppSync Settings"></p>
+<p>Make a note of:</p>
+<ul>
+<li>API URL</li>
+<li>API Key</li>
+</ul>
+<p>and open up your favourite Python editor and throw in:</p>
+<pre><code>from urllib import request
+from datetime import datetime
+import simplejson
+
+
+class GraphqlClient:
+
+    def __init__(self, endpoint, headers):
+        self.endpoint = endpoint
+        self.headers = headers
+
+    @staticmethod
+    def serialization_helper(o):
+        if isinstance(o, datetime):
+            return o.strftime('%Y-%m-%dT%H:%M:%S.000Z')
+
+    def execute(self, query, operation_name, variables={}):
+        data = simplejson.dumps({
+            &quot;query&quot;: query,
+            &quot;variables&quot;: variables,
+            &quot;operationName&quot;: operation_name
+        },
+            default=self.serialization_helper,
+            ignore_nan=True
+        )
+        r = request.Request(
+            headers=self.headers,
+            url=self.endpoint,
+            method='POST',
+            data=data.encode('utf8')
+        )
+        response = request.urlopen(r).read()
+        return response.decode('utf8')
+
+gq_client = GraphqlClient(
+    endpoint='https://xxxxxxxx.appsync-api.eu-west-1.amazonaws.com/graphql',
+    headers={'x-api-key': 'xxx-xxxxxxxxxxxxxxx'}
+)
+
+result = gq_client.execute(
+    query=&quot;&quot;&quot;
+query listFavouriteMovies {
+  listFavouriteMovies {
+    items {
+      id
+      title
+      rating
+    }
+  }
+}
+
+&quot;&quot;&quot;, 
+    operation_name='listFavouriteMovies'
+)
+print(result)
+</code></pre><p>Replacing the <code>endpoint</code> and <code>x-api-key</code> values with your endpoint URL and API key.</p>
+<p>Prior to running the script you&rsquo;ll need to install simplejson with <code>pip install simplejson</code>, but after that you should be able to do:</p>
+<pre><code>$ python AppSyncExample.py
+{&quot;data&quot;:{&quot;listFavouriteMovies&quot;:{&quot;items&quot;:[{&quot;id&quot;:&quot;35ef6587-9c8b-4e2e-95f9-453108eb4b04&quot;,&quot;title&quot;:&quot;Hello, world!&quot;,&quot;rating&quot;:76}]}}}
+</code></pre><p>Beautiful! We&rsquo;ve successfully queried our GraphQL API from Python!
+The boilerplate class <code>GraphqlClient</code> does some of the stuff (and is named identically) to the <a href="https://github.com/prisma-labs/python-graphql-client">python-graphql-client</a> library, but it&rsquo;s easier to see what&rsquo;s going on without installing and calling a 3rd party plugin. We&rsquo;re using <code>simplejson</code> because the AppSync GraphQL API doesn&rsquo;t get on with some of the more complex JSON values like <code>NaN</code> so we strip them out.</p>
+<h1 id="running-a-insert-operation">Running a Insert Operation.</h1>
+<p>We&rsquo;ve done a query, now let&rsquo;s write something.
+Delete everything between the triple quotes in the <code>result = gq_client.execute(query=</code> call and replace it with a new GraphQL call, a mutation:</p>
+<pre><code>mutation createFavouriteMovies($createfavouritemoviesinput: CreateFavouriteMoviesInput!) {
+  createFavouriteMovies(input: $createfavouritemoviesinput) {
+    id
+    title
+    rating
+  }
+}
+</code></pre><p>This provides the structure for inserting our record. Now we need to add the variables as an additional argument in the same <code>execute</code> method call.</p>
+<pre><code>variables={
+    &quot;createfavouritemoviesinput&quot;: {
+        &quot;title&quot;: &quot;Thor: Ragnarok&quot;, 
+        &quot;rating&quot;: 10
+    }
+}
+</code></pre><p>Note the top level key <code>createfavouritemoviesinput</code> which corresponds to the arg we&rsquo;re passing to the <code>createFavouriteMovies</code> mutation.</p>
+<p>We also need to update the <code>operation_name</code> param to be <code>createFavouriteMovies</code>.</p>
+<p>Once you&rsquo;re done it should look like:</p>
+<pre><code>result = gq_client.execute(query= &quot;&quot;&quot;
+mutation createFavouriteMovies($createfavouritemoviesinput: CreateFavouriteMoviesInput!) {
+  createFavouriteMovies(input: $createfavouritemoviesinput) {
+    id
+    title
+    rating
+  }
+}
+&quot;&quot;&quot;, 
+    operation_name='createFavouriteMovies',
+    variables={
+        &quot;createfavouritemoviesinput&quot;: {
+            &quot;title&quot;: &quot;Thor: Ragnarok&quot;, 
+            &quot;rating&quot;: 10
+        }
+    }
+)
+</code></pre><p>And running it should give you:</p>
+<pre><code>$ python AppSyncExample.py
+{&quot;data&quot;:{&quot;createFavouriteMovies&quot;:{&quot;id&quot;:&quot;a4c007e9-b0f4-45d3-816d-8c9acaef259d&quot;,&quot;title&quot;:&quot;Thor: Ragnarok&quot;,&quot;rating&quot;:10}}}
+</code></pre><p>Beautiful!
+Now If you swap the call back to the original <code>listFavouriteMovies</code> query we started off with, you should get both results back!</p>
+<pre><code>$ python AppSyncExample.py
+{&quot;data&quot;:{&quot;listFavouriteMovies&quot;:{&quot;items&quot;:[{&quot;id&quot;:&quot;6456c73f-6e72-43e4-b432-01ea7fe85448&quot;,&quot;title&quot;:&quot;Thor: Ragnarok&quot;,&quot;rating&quot;:10},{&quot;id&quot;:&quot;35ef6587-9c8b-4e2e-95f9-453108eb4b04&quot;,&quot;title&quot;:&quot;Hello, world!&quot;,&quot;rating&quot;:76}]}}}
+</code></pre><p>There&rsquo;s so much more you can do with AppSync, and honestly the some of coolest features are the AWS owned client libraries for React and React Native that do client side caching for offline data and optimistic submissions.</p>
+<h1 id="query-creation">Query Creation</h1>
+<p>I highly recommend the <a href="https://insomnia.rest/download/">Insomnia</a> tool to make your life easier when writing GraphQL queries. It allows you to browse the schema, gives you autocomplete. Flags missing/incomplete fields, etc.</p>
+<p>Once you&rsquo;ve installed it, create a new query</p>
+<p><img src="/images/2020/05/2020-05-17-Insomnia-GraphQL.png" alt="Insomnia Create a GraphQL Query"></p>
+<p>Then pop to headers and populate your credentials</p>
+<p><img src="/images/2020/05/2020-05-17-Insomnia-API-Key.png" alt="Insomnia Populate Credentials"></p>
+<p>Then you can refresh the schema.
+<img src="/images/2020/05/2020-05-17-Insomnia-RefreshSchema.png" alt="Insomnia Refresh Schema"></p>
+<p>After which you&rsquo;re free to browse the API schema (Schema &gt; Show Documentation), write queries, submit them, and see the way the payloads are passed around and what headers are expected/received.</p>
+<p><img src="/images/2020/05/2020-05-17-Insomnia-WriteQueries.png" alt="Insomnia Write Queries"></p>
+<h1 id="further-reading">Further Reading</h1>
+<p>If you want to learn more about AppSync&rsquo;s capabilities I suggest you check out this introductory video from AWS here:</p>
+<ul>
+<li><a href="https://www.youtube.com/watch?v=olAPj6EIlag">Introduction to AWS AppSync and GraphQL - AWS Online Tech Talks - Richard Threlkeld - 2018</a></li>
+</ul>
+
+    </div>
+    <div class="post-footer">
+      <div id="disqus_thread"></div>
+<script type="application/javascript">
+    var disqus_config = function () {
+    
+    
+    
+    };
+    (function() {
+        if (["localhost", "127.0.0.1"].indexOf(window.location.hostname) != -1) {
+            document.getElementById('disqus_thread').innerHTML = 'Disqus comments not available by default when the website is previewed locally.';
+            return;
+        }
+        var d = document, s = d.createElement('script'); s.async = true;
+        s.src = '//' + "sammartin" + '.disqus.com/embed.js';
+        s.setAttribute('data-timestamp', +new Date());
+        (d.head || d.body).appendChild(s);
+    })();
+</script>
+<noscript>Please enable JavaScript to view the <a href="https://disqus.com/?ref_noscript">comments powered by Disqus.</a></noscript>
+<a href="https://disqus.com" class="dsq-brlink">comments powered by <span class="logo-disqus">Disqus</span></a>
+    </div>
+  </article>
+
+    </main>
+  </body>
+</html>
